@@ -17,4 +17,3 @@ if pathway_Name is None:
     print('There is no results of org_code:', orgCode)
 else:
     print(get_title(targetUrl + orgCode))
-    print()
