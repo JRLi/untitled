@@ -20,6 +20,8 @@ Usage:
 pathAPIUrl = "http://rest.kegg.jp/list/pathway/"
 targetUrl = "http://www.genome.jp/dbget-bin/www_bget?pathway:"
 output_dir = "./gene_pathway_out/"
+tag1 = "div"
+tag2 = "a"
 
 
 def prepare_output_dir():
@@ -75,8 +77,9 @@ def get_gene_path_list(pathwaydict, regex):
                 return None
             try:
                 bsObj = BeautifulSoup(html)
-                target = bsObj.find("div").find_all("a", href=re.compile(regex))
+                target = bsObj.find(tag1).find_all(tag2, href=re.compile(regex))
                 for line in target:
+                    print(line)
                     geneID = line.string
                     something = geneID + "\t" + pathid + " " + pathwaydict[pathid]
                     gene_path_list.append(something)
@@ -97,7 +100,7 @@ def main(argv=None):
         if orgCode in ('-h', '-help', '--help'):
             print(use_message)
             exit()
-        pattern = '\/dbget-bin\/www_bget\?' + orgCode + ':\d+'
+        pattern = '\/dbget-bin\/www_bget\?' + orgCode + ':\w*\d+'
         pathUrl = pathAPIUrl + orgCode
         prepare_output_dir()
         pathway_data = get_path_list(pathUrl)
