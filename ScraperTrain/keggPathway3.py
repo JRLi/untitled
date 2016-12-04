@@ -155,6 +155,7 @@ def main(argv=None):
                     outputFile.write(line + "\n")
                 print("Output file:", output_dir + "/gene2KEGG." + org_code + suffix)
     print("No path url:", report_list)
+    
 if __name__ == "__main__":
     sys.exit(main())
 
