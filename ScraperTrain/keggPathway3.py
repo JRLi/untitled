@@ -61,7 +61,7 @@ def get_path_list(url):
 def get_pathway_dict(pathway, org):
     if pathway is None:
         print('There is no results of org_code:', org)
-        sys.exit()
+        return None
     else:
         print("get pathway dict")
         pathway_dict = OrderedDict()
@@ -122,6 +122,7 @@ def main(argv=None):
         argv = args_parse()
         print('Number of organism:', len(argv.organism), '\n', 'Detail:', argv.organism)
         print('Verbose mode' if argv.verbose else 'Default quiet mode')
+        report_list = []
         suffix = '.v' if argv.verbose else ''
 
     for org_code in argv.organism:
@@ -130,6 +131,9 @@ def main(argv=None):
         prepare_output_dir()
         pathway_data = get_path_list(path_url)
         pathway_name_dict = get_pathway_dict(pathway_data, org_code)
+        if pathway_name_dict is None:
+            report_list.append(org_code)
+            continue
         print(len(pathway_name_dict))
 
         if argv.verbose:
@@ -150,7 +154,7 @@ def main(argv=None):
                 for line in gene_pathway_list:
                     outputFile.write(line + "\n")
                 print("Output file:", output_dir + "/gene2KEGG." + org_code + suffix)
-
+    print("No path url:", report_list)
 if __name__ == "__main__":
     sys.exit(main())
 
