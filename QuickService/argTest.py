@@ -12,6 +12,9 @@ use_message = '''
 
 def args_parse():
     parser = argparse.ArgumentParser(description=use_message)
+    # arg_temp = argparse.ArgumentParser(description='aaa')
+    # arg_temp.add_argument("-b", "--base", action='store_true', help='test')
+    print("parser after argparse.ArgumentParser:", parser, "type", type(parser))
     parser.add_argument("-r", "--reversCP", action="store_true", help="output revers complement")
     # parser.add_argument('organism', nargs='+', help="kegg org code")
     parser.add_argument("-v", "--verbose", action="store_true", help="output verbose results")
@@ -22,6 +25,8 @@ def args_parse():
     parser_b.add_argument('-b', choices='xyz', help='baz help')
 
     args = parser.parse_args()
+    # args2 = arg_temp.parse_args()
+    print("args after parse_args:", args ,"type", type(args))
     return args
 
 
@@ -29,7 +34,7 @@ def main(argv=None):
     if argv is None:
         argv = args_parse()
         print(argv)
-        # print('Number of organism:', len(argv.organism), '\n', 'Detail:', argv.organism)
+        print('Number of organism:', len(argv.organism), '\n', 'Detail:', argv.organism)
         print('Verbose mode' if argv.verbose else 'Default quiet mode')
 
 if __name__ == "__main__":
