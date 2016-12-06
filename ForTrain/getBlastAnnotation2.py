@@ -1,3 +1,4 @@
+#!/usr/bin/env python3.5
 # -*- coding: UTF-8 -*-
 """
 usage: python3.5 getBlastAnnotation.py blastDecreasedFile(fileName, end with e-value) TargetAnnotation(all line >)
