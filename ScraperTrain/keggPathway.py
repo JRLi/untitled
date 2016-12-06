@@ -24,6 +24,11 @@ tag1 = "div"
 tag2 = "a"
 
 
+class Usage(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+
 def prepare_output_dir():
     print("prepare output dir")
     if os.path.exists(output_dir):
@@ -93,8 +98,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
     if len(argv) != 2:
-        print(use_message)
-        exit()
+        raise Usage(use_message)
     else:
         orgCode = sys.argv[1]
         if orgCode in ('-h', '-help', '--help'):
@@ -116,6 +120,7 @@ def main(argv=None):
             for line in geneid_pathway_list:
                 outputFile.write(line + "\n")
         print("Output file:", output_dir + "/gene2KEGG." + orgCode)
+
 if __name__ == "__main__":
     sys.exit(main())
 

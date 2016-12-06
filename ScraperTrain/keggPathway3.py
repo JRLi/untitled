@@ -122,9 +122,9 @@ def main(argv=None):
         argv = args_parse()
         print('Number of organism:', len(argv.organism), '\n', 'Detail:', argv.organism)
         print('Verbose mode' if argv.verbose else 'Default quiet mode')
-        report_list = []
         suffix = '.v' if argv.verbose else ''
 
+    report_list = []
     for org_code in argv.organism:
         pattern = '\/dbget-bin\/www_bget\?' + org_code + ':\w*\d+'
         path_url = pathAPIUrl + org_code
@@ -153,7 +153,7 @@ def main(argv=None):
             with open(output_dir + "gene2KEGG." + org_code + suffix, "w") as outputFile:
                 for line in gene_pathway_list:
                     outputFile.write(line + "\n")
-                print("Output file:", output_dir + "/gene2KEGG." + org_code + suffix)
+                print("Output file:", output_dir + "gene2KEGG." + org_code + suffix)
     print("No path url:", report_list)
     
 if __name__ == "__main__":
