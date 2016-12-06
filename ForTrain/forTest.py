@@ -5,7 +5,8 @@
 # from pandas import Series, DataFrame
 # from collections import defaultdict
 # import pandas as pd
-# import re
+import re
+import os
 # stringA = 'abcdefg'
 # print(stringA[0:-1])
 # dictTest = {"a": 1, "b": 2, "c": 3, "e": "aaa"}
@@ -213,3 +214,57 @@ print(bool(aaaa), bool(bbbb), bool(cccc))
 aaa = range(10, 20, 2)
 for a in aaa:
     print(a)
+
+stringTest = 'file_record_transcript.pdfxxx1e123 file_07241999.pdf 1231'
+pattern = '(file_\w+)(?:(?:t\.pdf)|(?:9\.pdf))'
+pattern2 = 'pdf$'
+match = re.search(pattern, stringTest)
+match2 = re.findall(pattern, stringTest)
+if match is None:
+    print('none')
+elif not match:
+    print('no result')
+else:
+    print(match.group())
+
+print(match2)
+for line in match2:
+    print(line)
+
+tuple1 = 1, 'aa', 33, 'bbb'
+b1, b2, b3 = 1, 2, '333'
+a1 = 1; a2 = 2; a3 = '333'
+# tuple1[2] = 3   # TypeError: 'tuple' object does not support item assignment
+print(tuple1[2])
+b1 = 5
+print(b1)   # assignment ok
+a1 = tuple1[2]
+print(a1, type(a1))
+
+line = '.abcde'
+fx = line.find('.')
+fy = line.find('cde')
+fz = line.find('g')
+print(fx, fy, fz)
+
+line = 'aaaa\tbbbb\tcccc\n'
+item1, item2 = line.strip().split('\t', 1)      # important
+print(item1, item2, sep="\n")
+
+filepath = 'http://rest.kegg.jp/list/pathway/test1.fastq.gz'
+filepath2 = './gene_pathway_out/test2_aaa_a1.3302.fq.gz'
+filepath3 = 'aea_5_r2.fa.gz'
+fpath, fname = os.path.split(filepath)
+print(fpath, fname, sep="\n")
+fbase, fext = os.path.splitext(fname)
+print(fbase, fext, sep='\n')
+
+fpath, fname = os.path.split(filepath2)
+print(fpath, fname, sep="\n")
+fbase, fext = os.path.splitext(fname)
+print(fbase, fext, sep='\n')
+
+fpath, fname = os.path.split(filepath3)
+print(fpath, fname, sep="\n")
+fbase, fext = os.path.splitext(fname)
+print(fbase, fext, sep='\n')
