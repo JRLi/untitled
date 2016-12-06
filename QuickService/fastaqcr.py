@@ -9,24 +9,24 @@ import gzip
 import os
 
 use_message = '''
-
-
+    To calculate NGS reads length and the number of reads.
+    To perform the reverse complement of fasta/fastq file.
+    Uniform fasta file line length: one line or 60mer/per line.
 '''
 
 
 def args_parse():
-    parser = argparse.ArgumentParser(description=use_message)
-    print("parser after argparse.ArgumentParser:", parser, "type", type(parser))
-    parser.add_argument("-r", "--reversCP", action="store_true", help="output revers complement")
-    parser.add_argument("-v", "--verbose", action="store_true", help="output verbose results")
+    parser = argparse.ArgumentParser(description=use_message, epilog="  Attention: For test!!",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-r", "--reverse", action="store_true", help="output reverse complement")
     subparsers = parser.add_subparsers(help='choice file format')
     parser_a = subparsers.add_parser('fa', help='input is fasta format')
-    parser_a.add_argument('organism', nargs='+', help="kegg org code")
+    parser_a.add_argument('-b', '--base', type=int, default=60, help='base pairs per line; if set 0, all in one line')
+    parser_a.add_argument('input', nargs='+', help="input fasta file")
     parser_b = subparsers.add_parser('fq', help='input is fastq format')
-    parser_b.add_argument('-b', choices='xyz', help='baz help')
+    parser_b.add_argument('-c', choices='xyz', help='baz help')
 
     args = parser.parse_args()
-    print("args after parse_args:", args, "type", type(args))
     return args
 
 
@@ -50,12 +50,13 @@ class Params:
 
 
 def main(argv=None):
-    params = Params()
     try:
         if argv is None:
-            argv = sys.argv
-        args = params.parse_options(argv)
-        print(args)
+            argv = args_parse()
+            print('Implement reverse complement' if argv.reverse else 'Normal mode')
+            root = '.reverse_complement.' if argv.reverse else ''
+        print(argv)
+
     except Usage as err:
         print(sys.stderr, err.msg)
         print(sys.stderr, "for help use --help")
