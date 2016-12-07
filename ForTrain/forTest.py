@@ -245,12 +245,16 @@ line = '.abcde'
 fx = line.find('.')
 fy = line.find('cde')
 fz = line.find('g')
-print(fx, fy, fz)
+print("find_test:", fx, fy, fz)
 
 line = 'aaaa\tbbbb\tcccc\n'
 item1, item2 = line.strip().split('\t', 1)      # important
-print(item1, item2, sep="\n")
+print('unpacking_test:', item1, item2, sep="\n")
 
+line = 'aaabbbccc'
+print('no sep item split test:', line.split(","))
+print()
+print('os.path.split and os.path.splitext test:')
 filepath = 'http://rest.kegg.jp/list/pathway/test1.fastq.gz'
 filepath2 = './gene_pathway_out/test2_aaa_a1.3302.fq.gz'
 filepath3 = 'aea_5_r2.fa.gz'
