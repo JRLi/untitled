@@ -55,3 +55,9 @@ obj2.index = ['z', 'y', 'x', 'w']   # change index
 print("index assign test:", obj2)
 
 
+file_path = 'D:/Project/PBMC/finalCLS/H1_GSE22886/GSE3365_GPL96.txt_p1000_H1_final'
+input = pd.read_table(file_path, index_col=0)
+print(input.columns.values)
+print(list(input.index))
+print(type(input))
+

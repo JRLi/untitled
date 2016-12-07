@@ -16,16 +16,22 @@ use_message = '''
 
 
 def args_parse():
-    parser = argparse.ArgumentParser(description=use_message, epilog="  Attention: For test!!",
+    parser = argparse.ArgumentParser(prog='fastaqcr', description=use_message, epilog="  Attention: For test!!",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-r", "--reverse", action="store_true", help="output reverse complement")
-    subparsers = parser.add_subparsers(help='choice file format')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s beta1')
+    subparsers = parser.add_subparsers(help='choice file format', dest='command')
+
     parser_a = subparsers.add_parser('fa', help='input is fasta format')
     parser_a.add_argument('-b', '--base', type=int, default=60, help='base pairs per line; if set 0, all in one line')
+    parser_a.add_argument('-i', '--id2seq', action="store_true", help="output ID2Sequence file, separated by \\t")
     parser_a.add_argument('input', nargs='+', help="input fasta file")
-    parser_b = subparsers.add_parser('fq', help='input is fastq format')
-    parser_b.add_argument('-c', choices='xyz', help='baz help')
 
+    parser_b = subparsers.add_parser('fq', help='input is fastq format')
+    parser_b.add_argument('-1', dest='left', nargs='?', help="Comma-separated list of files containing the #1 mates, "
+                                                         "no space inside. E.g, x_1.fq,y_1.fq,z_1.fa")
+    parser_b.add_argument('-2', dest='right', nargs='?', help="Comma-separated list of files containing the #2 mates, "
+                                                           "no space inside. .g, x_2.fq,y_2.fq,z_2.fa")
     args = parser.parse_args()
     return args
 
@@ -36,27 +42,40 @@ class Usage(Exception):
         self.msg = msg
 
 
-class Params:
-    def __init__(self, type):
-        self.type = type
+class FaParser():
+    def __init__(self, fa_argv):
+        self.fa_argv = fa_argv
 
-    def parse_options(self, argv):
-        try:
-            opts, args = getopt.getopt(argv[1:], "ho:", ["help", "output="])
 
-        except getopt.error as msg:
-            raise Usage(msg)
-        return opts, args
+    def test(self):
+        print(self.fa_argv)
+
+
+class FqParser():
+    def __init__(self, fq_argv):
+        self.fq_argv = fq_argv
+
+
+    def test(self):
+        print(self.fq_argv)
 
 
 def main(argv=None):
     try:
         if argv is None:
             argv = args_parse()
-            print('Implement reverse complement' if argv.reverse else 'Normal mode')
+            print('Implement reverse complement.' if argv.reverse else 'No reverse complement.')
             root = '.reverse_complement.' if argv.reverse else ''
-        print(argv)
-
+        if argv.command is None:
+            raise Usage('No command!!')
+        elif argv.command == 'fa':
+            print('Implement fasta mode.')
+            fastqc = FaParser(argv)
+            fastqc.test()
+        else:
+            print('Implement fastq mode.')
+            fastqc = FqParser(argv)
+            fastqc.test()
     except Usage as err:
         print(sys.stderr, err.msg)
         print(sys.stderr, "for help use --help")
