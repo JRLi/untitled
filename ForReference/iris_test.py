@@ -6,7 +6,9 @@ from sklearn import linear_model, datasets
 iris = datasets.load_iris()
 X = iris.data[:, :2]  # we only take the first two features.
 Y = iris.target
-
+print(Y)
+print(X)
+X2 = iris.data[:, 2:4]
 h = .02  # step size in the mesh
 
 logreg = linear_model.LogisticRegression(C=1e5)
@@ -22,10 +24,12 @@ xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
 Z = logreg.predict(np.c_[xx.ravel(), yy.ravel()])
 
 # Put the result into a color plot
+print(Z)
 Z = Z.reshape(xx.shape)
+P = logreg.score(X2,Y )
 plt.figure(1, figsize=(4, 3))
 plt.pcolormesh(xx, yy, Z, cmap=plt.cm.Paired)
-
+print(P)
 # Plot also the training points
 plt.scatter(X[:, 0], X[:, 1], c=Y, edgecolors='k', cmap=plt.cm.Paired)
 plt.xlabel('Sepal length')
