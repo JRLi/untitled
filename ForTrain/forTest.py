@@ -272,3 +272,5 @@ fpath, fname = os.path.split(filepath3)
 print(fpath, fname, sep="\n")
 fbase, fext = os.path.splitext(fname)
 print(fbase, fext, sep='\n')
+x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+print([i for i in range(len(x))])
