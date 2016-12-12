@@ -5,6 +5,7 @@ from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
+from sklearn.ensemble import RandomForestRegressor
 
 file_path = 'D:/Project/python_learning/games.csv'
 # Read in the data.
@@ -16,7 +17,7 @@ print(games.shape)
 # Make a histogram of all the rating in the average_rating column.
 plt.hist(games["average_rating"])
 # Show the plot.
-# plt.show()
+plt.show()
 
 # Print the first row of all the games with zero scores.
 # The .iloc methods on the data frames allows us to index by position.
@@ -25,14 +26,17 @@ print(games[games["average_rating"] == 0].iloc[0])
 print(games[games["average_rating"] > 0].iloc[0])
 # Remove any rows without user reviews.
 games = games[games["users_rated"] > 0]
+print("before drop na:", games.shape)   # (56932, 20)
 # Remove any rows with missing values.
 games = games.dropna(axis=0)
+print("after drop na:", games.shape)    #  (56894, 20)
 
 # Clustering
 # Initialized the model with 2 parameters -- number of clusters and random state (random seed).
 kmeans_model = KMeans(n_clusters=5, random_state=1)
 # Get only the numeric columns from games.
 good_columns = games._get_numeric_data()
+print('after -get_numeric_data():', good_columns.shape)
 # Fit the model using the good columns.
 kmeans_model.fit(good_columns)
 # Get the cluster assignments.
@@ -46,7 +50,7 @@ plot_columns = pca_2.fit_transform(good_columns)
 # Make a scatter plot of each game, shaded according to cluster assignment.
 plt.scatter(x=plot_columns[:,0], y=plot_columns[:,1], c= labels)
 # show the plot.
-# plt.show()
+plt.show()
 
 # Finding correlations
 # Return pairwise correlation data frame
@@ -90,3 +94,14 @@ mse1 = mean_squared_error(predictions1, testing[target])
 mse2 = mean_squared_error(predictions2, test[target])
 print(mse1, mse2)
 
+# Random forest model
+# Initialize the model with some parameters.
+model3 = RandomForestRegressor(n_estimators=100, min_samples_leaf=10, random_state=1)
+# Fit the model to the data.
+model3.fit(train[columns1], train[target])
+# Make predictions.
+predictions3 = model3.predict(test[columns1])
+print(predictions3)
+# Compute the error.
+mse3 = mean_squared_error(predictions3, test[target])
+print(mse3)
