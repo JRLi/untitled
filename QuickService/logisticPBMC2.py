@@ -51,9 +51,3 @@ for file_name in file_list:
     plt.figure(2)
     plt.plot(test_fseries.values)
     plt.show()
-# print(Y)
-# X = test_df[test_df.columns[:2]]
-# print(X)
-# logreg = linear_model.LogisticRegression(C=1e5)
-# lg = logreg.fit(X, Y)
-# print(lg)

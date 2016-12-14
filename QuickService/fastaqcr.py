@@ -60,6 +60,20 @@ class FqParser():
         print(self.fq_argv)
 
 
+def inverse_complement(line, seq = False):
+    complement_dict = {'a':'t','t':'a','c':'g','g':'c','A':'T','T':'A','C':'G','G':'C'}
+    r_line = line[::-1]
+    if seq:
+        rc_line = "".join(complement_dict.get(bp, bp) for bp in r_line)
+        return rc_line
+    else:
+        return r_line
+
+
+def insert_end(line, index):
+    return "".join([line[j:j+index]+"\n" for j in range(0, len(line), index)])
+
+
 def main(argv=None):
     try:
         if argv is None:
