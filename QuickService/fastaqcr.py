@@ -3,9 +3,7 @@
 Created by JRLi on 2016/12/06 for python learning
 """
 import sys
-import getopt
 import argparse
-import gzip
 import os
 
 use_message = '''
@@ -45,10 +43,14 @@ class Usage(Exception):
 class FaParser():
     def __init__(self, fa_argv):
         self.fa_argv = fa_argv
-
+        seqFile = self.fa_argv.input
 
     def test(self):
         print(self.fa_argv)
+
+
+    def process_seq(self):
+        pass
 
 
 class FqParser():
@@ -58,6 +60,25 @@ class FqParser():
 
     def test(self):
         print(self.fq_argv)
+
+
+def fa_parser(file, base, rev):
+    with open('./' + file, 'r') as inputFile:
+        id2seq_dict = {}
+        id, seq = '', []
+        for line in inputFile:
+            if line.startswith('>'):
+                if id != '':
+                    fseq = inverse_complement(''.join(seq), True) if rev else ''.join(seq)
+                    fseq = fseq if base == 0 else insert_end(fseq, base)
+                    id2seq_dict[id] = fseq
+                id = line.replace('\"', '').replace('\n', '')[1:]
+                seq = []
+            else:
+                seq = seq.append(line.replace('\n', ''))
+        fseq = inverse_complement(''.join(seq), True) if rev else ''.join(seq)
+        id2seq_dict[id] = fseq
+
 
 
 def inverse_complement(line, seq = False):
@@ -80,16 +101,20 @@ def main(argv=None):
             argv = args_parse()
             print('Implement reverse complement.' if argv.reverse else 'No reverse complement.')
             root = '.reverse_complement.' if argv.reverse else ''
-        if argv.command is None:
-            raise Usage('No command!!')
-        elif argv.command == 'fa':
-            print('Implement fasta mode.')
-            fastqc = FaParser(argv)
-            fastqc.test()
-        else:
-            print('Implement fastq mode.')
-            fastqc = FqParser(argv)
-            fastqc.test()
+            if argv.command is None:
+                raise Usage('No command!!')
+            elif argv.command == 'fa':
+                print('Implement fasta mode.')
+                for fileName in argv.input:
+                    fbase, fext = os.path.splitext(fileName)
+                    with open('./' + fbase + root + fext, 'w') as outFa:
+                        id2Seq_dict = fa_parser(fileName, argv.base, argv.reverse)
+
+
+            else:
+                print('Implement fastq mode.')
+                fastqc = FqParser(argv)
+                fastqc.test()
     except Usage as err:
         print(sys.stderr, err.msg)
         print(sys.stderr, "for help use --help")

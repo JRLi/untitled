@@ -19,3 +19,4 @@ for file_name in file_list:
     print(cells)
     train_score_dict, test_score_dict, test_fscore_dict = {}, {}, {}
     reg = linear_model.Lasso(alpha=0.1)
+
