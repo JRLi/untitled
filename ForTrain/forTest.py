@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 # import time
-# import numpy as np
+import numpy as np
 # from pandas import Series, DataFrame
 # from collections import defaultdict
 # import pandas as pd
@@ -245,7 +245,12 @@ line = '.abcde'
 fx = line.find('.')
 fy = line.find('cde')
 fz = line.find('g')
-print("find_test:", fx, fy, fz)
+fzz = line.find('e')
+print("find_test:", fx, fy, fz, fzz)
+
+line = ' (RefSeq) modA; molybdate'
+fx = line[line.find(')') + 2:line.find(';')]
+print(fx)
 
 line = 'aaaa\tbbbb\tcccc\n'
 item1, item2 = line.strip().split('\t', 1)      # important
@@ -274,3 +279,50 @@ fbase, fext = os.path.splitext(fname)
 print(fbase, fext, sep='\n')
 x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 print([i for i in range(len(x))])
+
+
+def insert_end(line, index):
+    return "".join(line[j:j+index]+"\n" for j in range(0, len(line), index))
+
+
+def reverse_complement(line):
+    complement_dict = {'a': 't', 't': 'a', 'c': 'g', 'g': 'c', 'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
+    #　rc_line = "".join(complement_dict.get(bp, bp) for bp in line)[::-1]
+    rc_line = "".join(complement_dict.get(bp, bp) for bp in reversed(line))
+    return rc_line
+
+x = 'aaAAttTTccCCggGGaaAAccCCttTTggGGaC'
+y = '!"#$%&('
+print("".join(reversed(x)))
+print(insert_end(x,5))
+print(">")
+print(reverse_complement(x))
+print(reverse_complement(y))
+print(len(x))
+print([j for j in range(0, 32, 5)])
+print([x[j:j+5]+"\n" for j in range (0, 32, 5)])
+print([c for c in x])
+# {i:fun(i) for i, j, k in range(0, 10)}
+
+foo = {'foo':1,'zip':2,'zam':3,'bar':4}
+print(k in foo for k in ("foo","bar"))
+print(list(k in foo for k in ("foo","bar")))
+if all (k in foo for k in ("foo","bar")):
+    print("They're there!")
+
+np.random.seed(42)
+n_samples, n_features = 50, 200
+X = np.random.randn(n_samples, n_features)
+coef = 3 * np.random.randn(n_features)
+inds = np.arange(n_features)
+print(X.shape)
+# print(X[:,:2])
+print(coef.shape)
+print(type(inds))   # start is 0, last is 199
+np.random.shuffle(inds)
+print(inds.shape)
+coef[inds[10:]] = 0
+print(inds[10:])
+print(coef)
+y = np.dot(X, coef)
+print(y.shape)
