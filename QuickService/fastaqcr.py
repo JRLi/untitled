@@ -24,7 +24,7 @@ def args_parse():
     parser_a.add_argument('-b', '--base', type=int, default=60, help='base pairs per line; if set 0, all in one line')
     parser_a.add_argument('-i', '--id2seq', action="store_true", help="output ID2Sequence file, separated by \\t")
     parser_a.add_argument('input', nargs='+', help="input fasta file")
-
+    parser_a.add_argument('-s', '--split', type=int, default=1, help='split fasta file two [-s] parts')
     parser_b = subparsers.add_parser('fq', help='input is fastq format')
     parser_b.add_argument('-1', dest='left', nargs='?', help="Comma-separated list of files containing the #1 mates, "
                                                          "no space inside. E.g, x_1.fq,y_1.fq,z_1.fa")
@@ -43,7 +43,7 @@ class Usage(Exception):
 class FaParser():
     def __init__(self, fa_argv):
         self.fa_argv = fa_argv
-        seqFile = self.fa_argv.input
+        seqFileList = self.fa_argv.input
 
     def test(self):
         print(self.fa_argv)
@@ -78,6 +78,13 @@ def fa_parser(file, base, rev):
                 seq = seq.append(line.replace('\n', ''))
         fseq = inverse_complement(''.join(seq), True) if rev else ''.join(seq)
         id2seq_dict[id] = fseq
+        return id2seq_dict
+
+
+def dict2file(dictIn, pathAndName, sepIn):
+    with open(pathAndName, 'w') as inputFile:
+        for k, v in dictIn.items():
+            inputFile.write(k + sepIn + v.replace('\n', '') + '\n')
 
 
 
@@ -109,8 +116,11 @@ def main(argv=None):
                     fbase, fext = os.path.splitext(fileName)
                     with open('./' + fbase + root + fext, 'w') as outFa:
                         id2Seq_dict = fa_parser(fileName, argv.base, argv.reverse)
-
-
+                        if argv.id2seq:
+                            dict2file(id2Seq_dict, './' + fbase + '_id2seq', '\t')
+                        for id in id2Seq_dict.keys():
+                            seq = insert_end(id2Seq_dict[id], argv.base) if argv.base !=0 else id2Seq_dict[id] + 'n'
+                            outFa.write('>' + id + '\n' + seq)
             else:
                 print('Implement fastq mode.')
                 fastqc = FqParser(argv)
