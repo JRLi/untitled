@@ -77,7 +77,6 @@ def fa_parser(file, base, rev):
                 id = line.replace('\"', '').replace('\r\n','').replace('\n', '')[1:]
                 print(id)
                 seq = []
-
             else:
                 seq.append(line.replace('\r\n','').replace('\n', ''))
 
