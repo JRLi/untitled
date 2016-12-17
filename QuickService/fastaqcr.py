@@ -5,6 +5,7 @@ Created by JRLi on 2016/12/06 for python learning
 import sys
 import argparse
 import os
+from collections import OrderedDict
 
 use_message = '''
     To calculate NGS reads length and the number of reads.
@@ -24,7 +25,7 @@ def args_parse():
     parser_a.add_argument('-b', '--base', type=int, default=60, help='base pairs per line; if set 0, all in one line')
     parser_a.add_argument('-i', '--id2seq', action="store_true", help="output ID2Sequence file, separated by \\t")
     parser_a.add_argument('input', nargs='+', help="input fasta file")
-
+    parser_a.add_argument('-s', '--split', type=int, default=1, help='split fasta file two [-s] parts')
     parser_b = subparsers.add_parser('fq', help='input is fastq format')
     parser_b.add_argument('-1', dest='left', nargs='?', help="Comma-separated list of files containing the #1 mates, "
                                                          "no space inside. E.g, x_1.fq,y_1.fq,z_1.fa")
@@ -43,7 +44,7 @@ class Usage(Exception):
 class FaParser():
     def __init__(self, fa_argv):
         self.fa_argv = fa_argv
-        seqFile = self.fa_argv.input
+        seqFileList = self.fa_argv.input
 
     def test(self):
         print(self.fa_argv)
@@ -64,20 +65,32 @@ class FqParser():
 
 def fa_parser(file, base, rev):
     with open('./' + file, 'r') as inputFile:
-        id2seq_dict = {}
+        id2seq_dict = OrderedDict()
         id, seq = '', []
+
         for line in inputFile:
             if line.startswith('>'):
                 if id != '':
                     fseq = inverse_complement(''.join(seq), True) if rev else ''.join(seq)
-                    fseq = fseq if base == 0 else insert_end(fseq, base)
-                    id2seq_dict[id] = fseq
-                id = line.replace('\"', '').replace('\n', '')[1:]
+                    bfseq = fseq + '\n' if base == 0 else insert_end(fseq, base)
+                    id2seq_dict[id] = bfseq
+                id = line.replace('\"', '').replace('\r\n','').replace('\n', '')[1:]
+                print(id)
                 seq = []
+
             else:
-                seq = seq.append(line.replace('\n', ''))
+                seq.append(line.replace('\r\n','').replace('\n', ''))
+
         fseq = inverse_complement(''.join(seq), True) if rev else ''.join(seq)
-        id2seq_dict[id] = fseq
+        bfseq = fseq + '\n' if base == 0 else insert_end(fseq, base)
+        id2seq_dict[id] = bfseq
+        return id2seq_dict
+
+
+def dict2file(dictIn, pathAndName):
+    with open(pathAndName, 'w') as inputFile:
+        for k, v in dictIn.items():
+            inputFile.write(k + '\t' + v.replace('\r\n','').replace('\n', '') + '\n')
 
 
 
@@ -100,21 +113,28 @@ def main(argv=None):
         if argv is None:
             argv = args_parse()
             print('Implement reverse complement.' if argv.reverse else 'No reverse complement.')
-            root = '.reverse_complement.' if argv.reverse else ''
+            root = '.reverse_complement' if argv.reverse else ''
             if argv.command is None:
                 raise Usage('No command!!')
+
             elif argv.command == 'fa':
                 print('Implement fasta mode.')
+                print(argv)
                 for fileName in argv.input:
                     fbase, fext = os.path.splitext(fileName)
                     with open('./' + fbase + root + fext, 'w') as outFa:
                         id2Seq_dict = fa_parser(fileName, argv.base, argv.reverse)
-
+                        if argv.id2seq:
+                            dict2file(id2Seq_dict, './' + fbase + '_id2seq')
+                        for id in id2Seq_dict.keys():
+                            outFa.write('>' + id + '\n' + id2Seq_dict[id])
 
             else:
                 print('Implement fastq mode.')
-                fastqc = FqParser(argv)
-                fastqc.test()
+                print(argv)
+                for left, right in zip(argv.left.split(','), argv.right.split(',')):
+                    print(left, right)
+
     except Usage as err:
         print(sys.stderr, err.msg)
         print(sys.stderr, "for help use --help")
