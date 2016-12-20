@@ -121,7 +121,7 @@ def main(argv=None):
                 print(argv)
                 for fileName in argv.input:
                     fbase, fext = os.path.splitext(fileName)
-                    with open('./' + fbase + root + fext, 'w') as outFa:
+                    with open('./' + fbase + '_' + str(argv.base) + root + fext, 'w') as outFa:
                         id2Seq_dict = fa_parser(fileName, argv.base, argv.reverse)
                         if argv.id2seq:
                             dict2file(id2Seq_dict, './' + fbase + '_id2seq')
@@ -131,8 +131,18 @@ def main(argv=None):
             else:
                 print('Implement fastq mode.')
                 print(argv)
-                for left, right in zip(argv.left.split(','), argv.right.split(',')):
-                    print(left, right)
+                lineCount, lineTemp = 0, 0
+                if argv.right is None:
+                    fpath, fname = os.path.split(argv.left)
+                    for single in fname.split(','):
+                        lineCount += 1
+                        lineTemp += 1
+                        print(single)
+                else:
+                    fpathL, fnameL = os.path.split(argv.left)
+                    fpathR, fnameR = os.path.split(argv.right)
+                    for left, right in zip(fnameL.split(','), fnameR.split(',')):
+                        print(left, right)
 
     except Usage as err:
         print(sys.stderr, err.msg)
