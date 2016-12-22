@@ -41,28 +41,6 @@ class Usage(Exception):
         self.msg = msg
 
 
-class FaParser():
-    def __init__(self, fa_argv):
-        self.fa_argv = fa_argv
-        seqFileList = self.fa_argv.input
-
-    def test(self):
-        print(self.fa_argv)
-
-
-    def process_seq(self):
-        pass
-
-
-class FqParser():
-    def __init__(self, fq_argv):
-        self.fq_argv = fq_argv
-
-
-    def test(self):
-        print(self.fq_argv)
-
-
 def fa_parser(file, base, rev):
     with open('./' + file, 'r') as inputFile:
         id2seq_dict = OrderedDict()
@@ -71,7 +49,7 @@ def fa_parser(file, base, rev):
         for line in inputFile:
             if line.startswith('>'):
                 if id != '':
-                    fseq = inverse_complement(''.join(seq), True) if rev else ''.join(seq)
+                    fseq = reverse_complement(''.join(seq), True) if rev else ''.join(seq)
                     bfseq = fseq + '\n' if base == 0 else insert_end(fseq, base)
                     id2seq_dict[id] = bfseq
                 id = line.replace('\"', '').replace('\r\n','').replace('\n', '')[1:]
@@ -80,7 +58,7 @@ def fa_parser(file, base, rev):
             else:
                 seq.append(line.replace('\r\n','').replace('\n', ''))
 
-        fseq = inverse_complement(''.join(seq), True) if rev else ''.join(seq)
+        fseq = reverse_complement(''.join(seq), True) if rev else ''.join(seq)
         bfseq = fseq + '\n' if base == 0 else insert_end(fseq, base)
         id2seq_dict[id] = bfseq
         return id2seq_dict
@@ -92,8 +70,7 @@ def dict2file(dictIn, pathAndName):
             inputFile.write(k + '\t' + v.replace('\r\n','').replace('\n', '') + '\n')
 
 
-
-def inverse_complement(line, seq = False):
+def reverse_complement(line, seq = False):
     complement_dict = {'a':'t','t':'a','c':'g','g':'c','A':'T','T':'A','C':'G','G':'C'}
     r_line = line[::-1]
     if seq:
@@ -105,6 +82,40 @@ def inverse_complement(line, seq = False):
 
 def insert_end(line, index):
     return "".join([line[j:j+index]+"\n" for j in range(0, len(line), index)])
+
+
+def gc_base(line):
+    return len(''.join(bp for bp in line if bp in ['c', 'g', 'C', 'G']))
+
+
+def fq_processor(path, rev, file_r1):
+    ReadCount, lineTemp, total_base, total_gc = 0, 0, 0, 0
+    with open(path + file_r1, 'r') as readFileL:
+        if rev:
+            global root
+            fbase_r1, fext_r1 = os.path.splitext(file_r1)
+            outL = open(path + fbase_r1 + root + fext_r1, 'w')
+        for line in readFileL:
+            lineTemp += 1
+            if lineTemp in {1, 3}:
+                if rev:
+                    outL.write(line)
+            if lineTemp == 2:
+                seq_temp = line.replace('\n', '').replace('\"', '').strip()
+                total_base += len(seq_temp)
+                total_gc += gc_base(seq_temp)
+                ReadCount += 1
+                if rev:
+                    outL.write(reverse_complement(seq_temp, True) + '\n')
+            if lineTemp ==4:
+                if rev:
+                    outL.write(reverse_complement(line.replace('\n', '').strip()) + '\n')
+                lineTemp = 0
+        average_length = total_base/ReadCount
+        gc_content = total_gc/total_base
+        if rev:
+            outL.close()
+    return ReadCount, average_length, total_base, gc_content
 
 
 def main(argv=None):
@@ -131,18 +142,28 @@ def main(argv=None):
             else:
                 print('Implement fastq mode.')
                 print(argv)
-                lineCount, lineTemp = 0, 0
-                if argv.right is None:
-                    fpath, fname = os.path.split(argv.left)
-                    for single in fname.split(','):
-                        lineCount += 1
-                        lineTemp += 1
-                        print(single)
-                else:
-                    fpathL, fnameL = os.path.split(argv.left)
-                    fpathR, fnameR = os.path.split(argv.right)
-                    for left, right in zip(fnameL.split(','), fnameR.split(',')):
-                        print(left, right)
+                with open('./SummaryOfReads.txt', 'w') as results:
+                    if argv.right is None:
+                        print('Run single end reads.')
+                        for single in argv.left.split(','):
+                            fpath, fname = os.path.split(single)
+                            results.write(fname + '\n' + 'Single end\n')
+                            rc, al, tb, gc = fq_processor(fpath, argv.reverse, fname)
+                            results.write('Reads_count:{}\nAverage_read_length:{}\nTotal_bases:{}\nGC_content:{}\n\n'.
+                                          format(rc, al, tb, gc))
+                    else:
+                        print('Run paired end reads.')
+                        for left, right in zip(argv.left.split(','), argv.right.split(',')):
+                            fpathL, fnameL = os.path.split(left)
+                            fpathR, fnameR = os.path.split(right)
+                            results.write(fnameL + '\t' + 'Paired end R1\n')
+                            rc_r1, al_r1, tb_r1, gc_r1 = fq_processor(fpathL, argv.reverse, fnameL)
+                            rc_r2, al_r2, tb_r2, gc_r2 = fq_processor(fpathR, argv.reverse, fnameR)
+                            results.write('Reads_count:{}\nAverage_read_length:{}\nTotal_bases:{}\nGC_content:{}\n'.
+                                          format(rc_r1, al_r1, tb_r1, gc_r1))
+                            results.write(fnameR + '\t' + 'Paired end R2\n')
+                            results.write('Reads_count:{}\nAverage_read_length:{}\nTotal_bases:{}\nGC_content:{}\n'.
+                                          format(rc_r2, al_r2, tb_r2, gc_r2))
 
     except Usage as err:
         print(sys.stderr, err.msg)

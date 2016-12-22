@@ -40,9 +40,12 @@ print(obj4.isnull())        # instant method!! need()
 print(pd.notnull(obj4))     # pandas isnull and notnull methods
 # Series adding
 obj5 = obj3 + obj4
-print(obj5)     # Important, if one index isn't in another, the value will be NaN.
+print(obj5)     # Very Important, if one index isn't in another, the value will be NaN.
 # IMPORTANT, IN python, NaN's don't compare equal, but None's do.
 print(None==None, np.nan==np.nan)   # True, False
+a = None
+b = None
+print(a==b)     # True, None can be compare equal
 print(obj5[obj5.isnull()])
 # Process NaN
 obj5[obj5.isnull()] = 0
@@ -51,4 +54,17 @@ obj4.fillna(0)
 print(obj4)     # !!! No change the value
 obj4 = obj4.fillna(0)
 print(obj4)     # Assign to obj4, and change the value!!!
+# Series has an attribute 'name', and it's index also has the same attribute.
+obj4.name='population'
+obj4.index.name = 'state'
+print(obj4)
 
+# Data Frame
+# Use DataFrame() to construct a df with dict
+data_dict = {'state':['ohio', 'ohio', 'ohio', 'Nevada', 'Nevada'], 'year':[2000, 2001, 2002, 2001, 2002],
+             'pop':[1.5, 1.7, 3.6, 2.4, 2.9]}
+frame = DataFrame(data_dict)
+print(frame)
+# When build df, can use 'columns' and 'index' to assign the  columns and index with order.
+frame2 = DataFrame(data_dict, columns = ['year', 'state', 'pop', 'debt'], index=['one', 'two', 'three', 'four', 'five'])
+print(frame2)
