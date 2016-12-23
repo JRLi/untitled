@@ -18,7 +18,7 @@ def args_parse():
     parser = argparse.ArgumentParser(prog='fastaqcr', description=use_message, epilog="  Attention: For test!!",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-r", "--reverse", action="store_true", help="output reverse complement")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s beta1')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s beta2')
     subparsers = parser.add_subparsers(help='choice file format', dest='command')
 
     parser_a = subparsers.add_parser('fa', help='input is fasta format')
@@ -27,17 +27,21 @@ def args_parse():
     parser_a.add_argument('input', nargs='+', help="input fasta file")
     parser_a.add_argument('-s', '--split', type=int, default=1, help='split fasta file two [-s] parts')
     parser_b = subparsers.add_parser('fq', help='input is fastq format')
-    parser_b.add_argument('-1', dest='left', nargs='?', help="Comma-separated list of files containing the #1 mates, "
-                                                         "no space inside. E.g, x_1.fq,y_1.fq,z_1.fa")
-    parser_b.add_argument('-2', dest='right', nargs='?', help="Comma-separated list of files containing the #2 mates, "
-                                                           "no space inside. .g, x_2.fq,y_2.fq,z_2.fa")
+    parser_b.add_argument('-p', dest='paired', nargs=2,help="Comma-separated list of files containing the #1 mates, "
+                                                            "and space-separated list of paired #2 mates, "
+                                                            "E.g, x_1.fq,y_1.fq,z_1.fa x_2.fq,y_2.fq,z_2.fa",
+                          metavar=('Left', 'Right'))
+    # parser_b.add_argument('-1', dest='left', nargs='?', help="Comma-separated list of files containing the #1 mates, "
+    #                                                      "no space inside. E.g, x_1.fq,y_1.fq,z_1.fa")
+    # parser_b.add_argument('-2', dest='right', nargs='?', help="Comma-separated list of files containing the #2 mates, "
+    #                                                        "no space inside. .g, x_2.fq,y_2.fq,z_2.fa")
+    parser_b.add_argument('-s', dest='single', nargs='?', help='Comma-separated list of single-end files')
     args = parser.parse_args()
     return args
 
 
 class Usage(Exception):
     def __init__(self, msg):
-        print()
         self.msg = msg
 
 
@@ -88,13 +92,12 @@ def gc_base(line):
     return len(''.join(bp for bp in line if bp in ['c', 'g', 'C', 'G']))
 
 
-def fq_processor(path, rev, file_r1):
+def fq_processor(path, rev, file_in):
     ReadCount, lineTemp, total_base, total_gc = 0, 0, 0, 0
-    with open(path + file_r1, 'r') as readFileL:
+    with open(path + file_in, 'r') as readFileL:
         if rev:
-            global root
-            fbase_r1, fext_r1 = os.path.splitext(file_r1)
-            outL = open(path + fbase_r1 + root + fext_r1, 'w')
+            fbase, fext = os.path.splitext(file_in)
+            outL = open(path + fbase + '.reverse_complement' + fext, 'w')
         for line in readFileL:
             lineTemp += 1
             if lineTemp in {1, 3}:
@@ -125,8 +128,7 @@ def main(argv=None):
             print('Implement reverse complement.' if argv.reverse else 'No reverse complement.')
             root = '.reverse_complement' if argv.reverse else ''
             if argv.command is None:
-                raise Usage('No command!!')
-
+                raise Usage('No command!!\nMust input fa or fq!')
             elif argv.command == 'fa':
                 print('Implement fasta mode.')
                 print(argv)
@@ -142,18 +144,25 @@ def main(argv=None):
             else:
                 print('Implement fastq mode.')
                 print(argv)
+                if argv.paired is None and argv.single is None:
+                    raise Usage('No fastq file, please use: ./fastaqcr [-r] fq [-p PAIRED PAIRED] [-s [SINGLE]]')
                 with open('./SummaryOfReads.txt', 'w') as results:
-                    if argv.right is None:
-                        print('Run single end reads.')
-                        for single in argv.left.split(','):
-                            fpath, fname = os.path.split(single)
-                            results.write(fname + '\n' + 'Single end\n')
+                    if argv.single is not None:
+                        print('Run single end reads.\nInput line: {}\n'.format(argv.single))
+                        for sfile in argv.single.split(','):
+                            fpath, fname = os.path.split(sfile)
+                            results.write(fname + '\t' + 'Single end\n')
                             rc, al, tb, gc = fq_processor(fpath, argv.reverse, fname)
                             results.write('Reads_count:{}\nAverage_read_length:{}\nTotal_bases:{}\nGC_content:{}\n\n'.
                                           format(rc, al, tb, gc))
-                    else:
-                        print('Run paired end reads.')
-                        for left, right in zip(argv.left.split(','), argv.right.split(',')):
+                    if argv.paired is not None:
+                        print('Run paired end reads.\nInput line: {}\n'.format(argv.paired))
+                        r1_list = argv.paired[0].split(',')
+                        r2_list = argv.paired[1].split(',')
+                        if len(r1_list) != len(r2_list):
+                            print('Warning: the number of r1 files is not equal to r2 files!!!\n'
+                                  'Warning: the definition of paired-end is according to shorter list!!!')
+                        for left, right in zip(r1_list, r2_list):
                             fpathL, fnameL = os.path.split(left)
                             fpathR, fnameR = os.path.split(right)
                             results.write(fnameL + '\t' + 'Paired end R1\n')
@@ -162,7 +171,7 @@ def main(argv=None):
                             results.write('Reads_count:{}\nAverage_read_length:{}\nTotal_bases:{}\nGC_content:{}\n'.
                                           format(rc_r1, al_r1, tb_r1, gc_r1))
                             results.write(fnameR + '\t' + 'Paired end R2\n')
-                            results.write('Reads_count:{}\nAverage_read_length:{}\nTotal_bases:{}\nGC_content:{}\n'.
+                            results.write('Reads_count:{}\nAverage_read_length:{}\nTotal_bases:{}\nGC_content:{}\n\n'.
                                           format(rc_r2, al_r2, tb_r2, gc_r2))
 
     except Usage as err:
