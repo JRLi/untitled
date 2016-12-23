@@ -145,7 +145,7 @@ def main(argv=None):
                 print('Implement fastq mode.')
                 print(argv)
                 if argv.paired is None and argv.single is None:
-                    raise Usage('No fastq file, please use: ./fastaqcr [-r] fq [-p PAIRED PAIRED] [-s [SINGLE]]')
+                    raise Usage('Error! No input file, please use:./fastaqcr [-r] fq [-p PAIRED PAIRED] [-s [SINGLE]]')
                 with open('./SummaryOfReads.txt', 'w') as results:
                     if argv.single is not None:
                         print('Run single end reads.\nInput line: {}\n'.format(argv.single))
@@ -165,6 +165,7 @@ def main(argv=None):
                         for left, right in zip(r1_list, r2_list):
                             fpathL, fnameL = os.path.split(left)
                             fpathR, fnameR = os.path.split(right)
+                            print('Processing paired:\t{}')
                             results.write(fnameL + '\t' + 'Paired end R1\n')
                             rc_r1, al_r1, tb_r1, gc_r1 = fq_processor(fpathL, argv.reverse, fnameL)
                             rc_r2, al_r2, tb_r2, gc_r2 = fq_processor(fpathR, argv.reverse, fnameR)
@@ -176,7 +177,7 @@ def main(argv=None):
 
     except Usage as err:
         print(sys.stderr, err.msg)
-        print(sys.stderr, "for help use --help")
+        print(sys.stderr, "Terminated, for help use -h or --help")
         return 2
 
 if __name__ == "__main__":
