@@ -8,6 +8,9 @@ import os
 from collections import OrderedDict
 
 use_message = '''
+    Usage:  fastaqcr [-r] fa [-b BASE] [-i] input [input ...]
+            fastaqcr [-r] fq [-p Left Right] [-s [SINGLE]]
+    For help, please use "fastaqcr fa -h" or "fastaqcr fq -h".
     To calculate NGS reads length and the number of reads.
     To perform the reverse complement of fasta/fastq file.
     Uniform fasta file line length: one line or 60mer/per line.
@@ -24,8 +27,8 @@ def args_parse():
     parser_a = subparsers.add_parser('fa', help='input is fasta format')
     # parser_a.add_argument('-b', '--base', type=int, default=60, help='base pairs per line; if set 0, all in one line')
     parser_a.add_argument('-b', '--base', type=int, help='base pairs per line; if set 0, all in one line')
-    parser_a.add_argument('-i', '--id2seq', action="store_true", help="output ID2Sequence file, separated by \\t")
-    parser_a.add_argument('input', nargs='+', help="input fasta file")
+    parser_a.add_argument('-i', '--id2seq', action="store_true", help="output ID2Sequence file, separated by tab")
+    parser_a.add_argument('input', nargs='+', help="input space-separated fasta files")
     parser_a.add_argument('-s', '--split', type=int, default=1, help='split fasta file two [-s] parts')
     parser_b = subparsers.add_parser('fq', help='input is fastq format')
     parser_b.add_argument('-p', dest='paired', nargs=2,help="Comma-separated list of files containing the #1 mates, "
@@ -193,6 +196,7 @@ def main(argv=None):
                             results.write(fnameR + '\t' + 'Paired end R2\n')
                             results.write('Reads_count:{}\nAverage_read_length:{}\nTotal_bases:{}\nGC_content:{}\n\n'.
                                           format(rc_r2, al_r2, tb_r2, gc_r2))
+        print('Done.')
 
     except Usage as err:
         print(sys.stderr, err.msg)
