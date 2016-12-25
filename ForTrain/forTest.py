@@ -263,6 +263,7 @@ print('os.path.split and os.path.splitext test:')
 filepath = 'http://rest.kegg.jp/list/pathway/test1.fastq.gz'
 filepath2 = './gene_pathway_out/test2_aaa_a1.3302.fq.gz'
 filepath3 = 'aea_5_r2.fa.gz'
+filepath4 = '../cro/t1,t2,t3,t4'
 fpath, fname = os.path.split(filepath)
 print(fpath, fname, sep="\n")
 fbase, fext = os.path.splitext(fname)
@@ -277,6 +278,10 @@ fpath, fname = os.path.split(filepath3)
 print(fpath, fname, sep="\n")
 fbase, fext = os.path.splitext(fname)
 print(fbase, fext, sep='\n')
+fpath, fname = os.path.split(filepath4)
+print(fpath, fname, sep='\n')
+
+
 x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 print([i for i in range(len(x))])
 
@@ -326,3 +331,33 @@ print(inds[10:])
 print(coef)
 y = np.dot(X, coef)
 print(y.shape)
+
+for i in range(10):
+    if i in {3, 5}:
+        print(i)
+
+a = 1
+b = 1
+c = None
+allNone = a is None and b is None and c is None
+pairAllNone = a is None or b is None
+print(allNone, pairAllNone)
+print(None in (a, b, c))
+print(all([a, b, c]))
+print(not all([a, b, c]))
+if None in (a, b, c):
+    print('one of them is None')
+else:
+    print('all of them is not None')
+
+if None in (a, b, c) and all([a, b, c]):
+    print('one of them is None')
+else:
+    print('all of them is None')
+t = 0
+a = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+for i in a:
+    t += i
+    if (t >= 25):
+        c = i
+print(c)
