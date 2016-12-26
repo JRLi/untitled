@@ -4,6 +4,7 @@ from sklearn import datasets, linear_model
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
+from sklearn import svm
 import os
 
 file_path = 'D:/Project/PBMC/logistic_in/'
@@ -25,7 +26,10 @@ for file_name in file_list:
     lasso_reg = linear_model.Lasso(alpha=alpha)
     lasso_reg.fit(train_df[features], train_df[target])
     test_y_predict = lasso_reg.predict(test_df[features])
+    train_y_predict = lasso_reg.predict(train_df[features])
     r2_score_lasso = metrics.r2_score(test_df[target], test_y_predict)
+    r2_score_lasso_train = metrics.r2_score(train_df[target], train_y_predict)
     print(test_y_predict)
     print(lasso_reg)
     print('r^2 in test data: %f' % r2_score_lasso)
+    print('r^2 in train data: %f' % r2_score_lasso_train)

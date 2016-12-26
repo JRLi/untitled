@@ -17,6 +17,7 @@ with open("D:/Project/platelet/db.txt", "r") as inputData:
 
 conn = pymysql.connect(host='140.120.203.44', user=accountName, password=passWd, db=dbName,
                        charset='utf8', cursorclass=pymysql.cursors.Cursor)  # if dict out: pymysql.cursors.DictCursor
+
 sql = 'SELECT * FROM ' + tableName
 
 curData = conn.cursor()
