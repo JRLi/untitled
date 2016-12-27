@@ -6,6 +6,7 @@ import sys
 import argparse
 import os
 from collections import OrderedDict
+import itertools
 
 use_message = '''
     Usage:  fastaqcr [-r] fa [-b BASE] [-i] input [input ...]
@@ -27,9 +28,12 @@ def args_parse():
     parser_a = subparsers.add_parser('fa', help='input is fasta format')
     # parser_a.add_argument('-b', '--base', type=int, default=60, help='base pairs per line; if set 0, all in one line')
     parser_a.add_argument('-b', '--base', type=int, help='base pairs per line; if set 0, all in one line')
+    # parser_a.add_argument('-s', '--split', type=int, default=1, help='split fasta file two [-s] parts')
+    parser_a.add_argument('-s', '--split', type=int, help='split fasta file to [-s] parts. Attention, the separated'
+                                                          'fasta files DO NOT have the same order with origin file')
     parser_a.add_argument('-i', '--id2seq', action="store_true", help="output ID2Sequence file, separated by tab")
     parser_a.add_argument('input', nargs='+', help="input space-separated fasta files")
-    parser_a.add_argument('-s', '--split', type=int, default=1, help='split fasta file two [-s] parts')
+
     parser_b = subparsers.add_parser('fq', help='input is fastq format')
     parser_b.add_argument('-p', dest='paired', nargs=2,help="Comma-separated list of files containing the #1 mates, "
                                                             "and space-separated list of paired #2 mates, "
@@ -52,48 +56,80 @@ class Usage(Exception):
 def fa_parser(file, base, rev):
     with open(file, 'r') as inputFile:
         id2seq_dict = OrderedDict()
-        id, seq, total_base, total_gc, len_list, check_len, n50, n90 = '', [], 0, 0, [], 0, [], []
+        id, seq, total_base, total_gc, len_list, check_len, n50, n90 = '', [], 0, 0, [], 0, None, None
         for line in inputFile:
             if line.startswith('>'):
                 if id != '':
-                    fseq = reverse_complement(''.join(seq), True) if rev else ''.join(seq)
+                    fseq = reverse_complement(''.join(seq), True) if rev else ''.join(seq)  # Reverse check point
                     total_base += len(fseq)
                     len_list.append(len(fseq))
                     total_gc += gc_base(fseq)
-                    bfseq = fseq + '\n' if base in (0, None) else insert_end(fseq, base)
+                    bfseq = fseq + '\n' if base in (0, None) else insert_end(fseq, base)    # Base check point
                     id2seq_dict[id] = bfseq
                 id = line.replace('\"', '').replace('\r\n','').replace('\n', '')[1:]
                 seq = []
             else:
                 seq.append(line.replace('\r\n','').replace('\n', ''))
-        fseq = reverse_complement(''.join(seq), True) if rev else ''.join(seq)
+        fseq = reverse_complement(''.join(seq), True) if rev else ''.join(seq)  # Last sequence add into dictionary
         total_base += len(fseq)
         len_list.append(len(fseq))
         total_gc += gc_base(fseq)
         bfseq = fseq + '\n' if base in (0, None) else insert_end(fseq, base)
-        id2seq_dict[id] = bfseq
-        len_list.sort(reverse=True)
+        id2seq_dict[id] = bfseq         # dictionary add end!!
+        len_list.sort(reverse=True)     # Length list sorting descending
         max_contig, min_contig = len_list[0], len_list[-1]
         gc_content = total_gc/total_base
         total_contig = len(id2seq_dict)
         for j in len_list:
             check_len += j
-            if check_len >= total_base/2:
-                n50.append(j)
-            if check_len >= total_base*9/10:
-                n90.append(j)
-        return id2seq_dict, total_contig, max_contig, min_contig, n50[0], n90[0], total_base, gc_content
+            if check_len >= total_base/2 and n50 is None:
+                # n50.append(j)
+                n50 = j
+            if check_len >= total_base*9/10 and n50 is None:
+                # n90.append(j)
+                n90 = j
+        return id2seq_dict, total_contig, max_contig, min_contig, n50, n90, total_base, gc_content
 
 
-def dict2file(dictIn, arg_id2seq, base_number, attlist):
+def dict2file(dictIn, arg_id2seq, base_number, split_number, attlist):
     if arg_id2seq:
         with open(attlist[0] + attlist[1] + attlist[3] + '.id2seq', 'w') as inputFile:
             for k, v in dictIn.items():
                 inputFile.write(k + '\t' + v.replace('\r\n','').replace('\n', '') + '\n')
     if base_number is not None:
-        with open(attlist[0] + attlist[1] + '.' + str(base_number) + attlist[3] + attlist[2], 'w') as outFa:
-            for id in dictIn.keys():
-                outFa.write('>' + id + '\n' + dictIn[id])
+        if split_number is not None and split_number != 1:
+            split_count = 0
+            for items in split_dict(dictIn, split_number):
+                split_count += 1
+                with open(attlist[0] + attlist[1] + '.' + str(base_number) + attlist[3]+ '.'
+                                  + str(split_count) + attlist[2], 'w') as outFa:
+                    for id in items.keys():
+                        outFa.write('>' + id + '\n' + items[id])
+        else:
+            with open(attlist[0] + attlist[1] + '.' + str(base_number) + attlist[3] + attlist[2], 'w') as outFa:
+                for id in dictIn.keys():
+                    outFa.write('>' + id + '\n' + dictIn[id])
+    elif split_number is not None and split_number != 1:
+        split_count = 0
+        for items in split_dict(dictIn, split_number):
+            split_count += 1
+            with open(attlist[0] + attlist[1]+ attlist[3] + '.' + str(split_count) +attlist[2], 'w') as outFa:
+                for id in items.keys():
+                    outFa.write('>' + id + '\n' + items[id])
+
+
+def split_dict(data, chunk_number):
+    size = len(data) // chunk_number if len(data) % chunk_number == 0 else len(data) // chunk_number + 1
+    iter_obj = iter(data)
+    for i in range(0, len(data), size):
+        yield {k:data[k] for k in itertools.islice(iter_obj, size)}
+
+
+def ordered_split(data, chunk_number):
+    size = len(data) // chunk_number if len(data) % chunk_number == 0 else len(data) // chunk_number + 1
+    iter_obj = iter(data.keys())
+    for i in range(0, len(data), size):
+        yield OrderedDict((k,data[k]) for k in itertools.islice(iter_obj, size))
 
 
 def reverse_complement(line, seq = False):
@@ -159,8 +195,8 @@ def main(argv=None):
                         fpath, fname = os.path.split(fileName)
                         fbase, fext = os.path.splitext(fname)
                         id2Seq_dict, tc, mxc, mic, n50, n90, tb, gcc = fa_parser(fileName, argv.base, argv.reverse)
-                        if argv.id2seq is not None or argv.base is not None:
-                            dict2file(id2Seq_dict, argv.id2seq, argv.base, [fpath, fbase, fext, root])
+                        if argv.id2seq is not None or argv.base is not None or argv.split is not None:
+                            dict2file(id2Seq_dict, argv.id2seq, argv.base, argv.split, [fpath, fbase, fext, root])
                         rs.write('File: {}\nTotal_contigs: {}\nMax_contig: {}\nMin_contig: {}\nn50: {}\nn90: {}\n'
                                  'Total_bases: {}\nGC_content: {}\n\n'.format(fname, tc, mxc, mic, n50, n90, tb, gcc))
             else:
