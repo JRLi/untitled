@@ -85,7 +85,7 @@ def fa_parser(file, base, rev):
             if check_len >= total_base/2 and n50 is None:
                 # n50.append(j)
                 n50 = j
-            if check_len >= total_base*9/10 and n50 is None:
+            if check_len >= total_base*9/10 and n90 is None:
                 # n90.append(j)
                 n90 = j
         return id2seq_dict, total_contig, max_contig, min_contig, n50, n90, total_base, gc_content

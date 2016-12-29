@@ -1,7 +1,9 @@
 # -*- coding: UTF-8 -*-
 
 # import time
+import itertools
 import numpy as np
+from collections import OrderedDict
 # from pandas import Series, DataFrame
 # from collections import defaultdict
 # import pandas as pd
@@ -361,3 +363,30 @@ for i in a:
     if (t >= 25):
         c = i
 print(c)
+
+a = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6}
+b = OrderedDict((k, a[k]) for k in ['a','b','c','d','e'])
+print(a)
+print(b)
+def split_dict(data, size=100000):
+    iter_obj = iter(data.keys())
+    for i in range(0, len(data), size):
+        yield {k:data[k] for k in itertools.islice(iter_obj, size)}
+
+
+def ordered_split(data, size=100000):
+    iter_obj = iter(data.keys())
+    for i in range(0, len(data), size):
+        yield OrderedDict((k,data[k]) for k in itertools.islice(iter_obj, size))
+
+
+sizeA = len(a) // 2 if len(a) % 2 == 0 else len(a) // 2 + 1
+sizeB = len(a) // 2 if len(a) % 2 == 0 else len(a) // 2 + 1
+for dicts in split_dict(a,sizeA):
+    print(dicts)
+
+for dicts in split_dict(b, sizeB):
+    print(dicts)
+
+for dicts in ordered_split(b, sizeB):
+    print(dicts)

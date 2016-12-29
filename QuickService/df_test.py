@@ -14,6 +14,7 @@ obj2 = Series(list1, ['d', 'b', 'a', 'c'])
 print(obj2)
 print(type(obj2))
 print(obj2.index)
+print(obj2.index[1])
 print(type(obj2.index))
 # So, can select values use index, and implement multiple query; like a dict, but can easy to implement multiple query
 print(obj2['a'], obj[1], obj[3], obj2['d'])
