@@ -8,8 +8,8 @@ output_dim1=1024
 output_dim2=512
 batch_size=200
 nb_epoch=1000
-
-data, labels, types = get_data("Training.csv")
+path = 'D:/Project/python_learning/'
+data, labels, types = get_data(path + "Training.csv")
 
 model = Sequential()
 
@@ -24,7 +24,7 @@ model.compile(loss="mse", optimizer="rmsprop")
 model.fit(data, labels, nb_epoch=nb_epoch, batch_size=batch_size)
 
 
-data2, labels2, types2 = get_data("Test.csv")
+data2, labels2, types2 = get_data(path + "Test.csv")
 predict_types = model.predict_classes(data2)
 print("Types:", types2)
 print("True Types:", labels2.argmax(1))
@@ -32,8 +32,8 @@ print("Predict Types:", predict_types)
 print("Corr:", corr(labels2.argmax(1).tolist(), predict_types.tolist()))
 
 
-save_model(model)
-model = load_model()
+save_model(model, path)
+model = load_model(path)
 
 predict_types = model.predict_classes(data2)
 print("Types:", types2)

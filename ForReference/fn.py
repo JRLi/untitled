@@ -12,11 +12,12 @@ def get_data(path):
 
         label_type_list = rows.__next__()[2:]
         print('rows.__next__()[2:]: ', label_type_list)  # debug
+        print('type(rows.__next__()[2:]):', type(label_type_list))
         types = list(set(label_type_list))
         types.sort()
-        print('types after sort:', types)    # debug
+        print('types after sort and type(types):', types, type(types))    # debug
         types = {types[i]: i for i in range(len(types))}
-        print('types_dict:', types)
+        print('types and type(types):', types, type(types))     # debug
         labels = [[types[lable_type]] for lable_type in label_type_list]
         labels = np.array(labels)
         labels = to_categorical(labels, len(types))
@@ -38,15 +39,15 @@ def corr(a, b):
     return stats.pearsonr(a, b)[0]
 
 
-def save_model(model):
+def save_model(model, path):
     json_string = model.to_json()
-    with open("model.json", "w") as output:
+    with open(path + "model.json", "w") as output:
         output.writelines(json_string)
-    model.save_weights("weights.h5")
+    model.save_weights(path + "weights.h5")
 
 
-def load_model():
-    with open("model.json", "r") as input:
+def load_model(path):
+    with open(path + "model.json", "r") as input:
         model = model_from_json(input.readline())
-    model.load_weights("weights.h5")
+    model.load_weights(path + "weights.h5")
     return model
