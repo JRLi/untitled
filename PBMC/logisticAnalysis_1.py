@@ -17,7 +17,7 @@ roc_auc = dict()
 
 for file_name in file_list:
     df = pd.read_table(file_path + file_name, index_col=0)
-    df = df[df.Disease != 2]
+    df = df[df.Disease != 2]    # only use 0 and 1
     target = 'Disease'
     print(df.shape)
     cells = df.columns.tolist()
