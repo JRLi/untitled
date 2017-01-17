@@ -1,6 +1,6 @@
 from keras.models import Sequential, model_from_json
 from keras.layers import Dense, Dropout
-from PBMC.pbmcForKerasRNN import get_data, corr, save_model, load_model
+from PBMC.addonForRNN import get_data, corr, save_model, load_model
 import tensorflow as tf
 tf.python.control_flow_ops = tf
 
@@ -9,7 +9,10 @@ output_dim2=512
 batch_size=200
 nb_epoch=1000
 path = 'D:/Project/python_learning/'
-data, labels, types = get_data(path + "Training.csv")
+training = 'GSE68086_raw.csv'
+testing = 'GSE68086_raw.csv'
+
+data, labels, types = get_data(path + training)
 
 model = Sequential()
 
@@ -24,7 +27,7 @@ model.compile(loss="mse", optimizer="rmsprop")
 model.fit(data, labels, nb_epoch=nb_epoch, batch_size=batch_size)
 
 
-data2, labels2, types2 = get_data(path + "Test.csv")
+data2, labels2, types2 = get_data(path + testing)
 predict_types = model.predict_classes(data2)
 print("Types:", types2)
 print("True Types:", labels2.argmax(1))
