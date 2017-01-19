@@ -1,0 +1,50 @@
+from keras.models import model_from_json
+from keras.utils.np_utils import to_categorical
+from numpy import transpose
+import numpy as np
+import pandas as pd
+import scipy.stats as stats
+from sklearn.model_selection import train_test_split
+import csv
+
+
+def parse_label(label_type_list):
+    types = list(set(label_type_list))
+    types.sort()
+    types = {types[i]: i for i in range(len(types))}
+    labels = [[types[lable_type]] for lable_type in label_type_list]
+    labels = np.array(labels)
+    labels = to_categorical(labels, len(types))
+    return labels, types
+
+
+def get_data(path, phenotype, proportion):
+    with open(path, "r", encoding="utf-8") as f:
+        df = pd.read_table(path, index_col=0)
+        target = phenotype  # As a 'Y', target
+        cells = df.columns.tolist()
+        features = cells[:-1]
+        train_df, test_df = train_test_split(df, train_size=proportion, random_state=1)    # train_size
+        data_train, target_train = train_df[features].values.astype('float32'), train_df[target]
+        data_test, target_test = test_df[features].values.astype('float32'), test_df[target]
+        labels_train, types_train = parse_label(target_train.tolist())
+        labels_test, types_test = parse_label(target_test.tolist())
+    return data_train, labels_train, types_train, data_test, labels_test, types_test
+
+
+def corr(a, b):
+    return stats.pearsonr(a, b)[0]
+
+
+def save_model(model, path):
+    json_string = model.to_json()
+    with open(path + "model.json", "w") as output:
+        output.writelines(json_string)
+    model.save_weights(path + "weights.h5")
+
+
+def load_model(path):
+    with open(path + "model.json", "r") as input:
+        model = model_from_json(input.readline())
+    model.load_weights(path + "weights.h5")
+    return model
