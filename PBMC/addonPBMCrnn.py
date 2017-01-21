@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 from sklearn.model_selection import train_test_split
-import csv
+from sklearn.metrics import accuracy_score, f1_score
 
 
 def parse_label(label_type_list):
@@ -18,22 +18,30 @@ def parse_label(label_type_list):
     return labels, types
 
 
-def get_data(path, phenotype, proportion):
-    with open(path, "r", encoding="utf-8") as f:
-        df = pd.read_table(path, index_col=0)
-        target = phenotype  # As a 'Y', target
-        cells = df.columns.tolist()
-        features = cells[:-1]
-        train_df, test_df = train_test_split(df, train_size=proportion, random_state=1)    # train_size
-        data_train, target_train = train_df[features].values.astype('float32'), train_df[target]
-        data_test, target_test = test_df[features].values.astype('float32'), test_df[target]
-        labels_train, types_train = parse_label(target_train.tolist())
-        labels_test, types_test = parse_label(target_test.tolist())
+def get_data(path, phenotype, proportion, mode=1):
+    df = pd.read_table(path, index_col=0)
+    target = phenotype  # As a 'Y', target
+    if mode != 1:
+        df = df.transpose
+    cells = df.columns.tolist()
+    features = cells[:-1]
+    train_df, test_df = train_test_split(df, train_size=proportion, random_state=1)    # train_size
+    data_train, target_train = train_df[features].values.astype('float32'), train_df[target]
+    data_test, target_test = test_df[features].values.astype('float32'), test_df[target]
+    # np.linalg.norm
+    labels_train, types_train = parse_label(target_train.tolist())
+    labels_test, types_test = parse_label(target_test.tolist())
     return data_train, labels_train, types_train, data_test, labels_test, types_test
 
 
 def corr(a, b):
     return stats.pearsonr(a, b)[0]
+
+
+def score(true_y, predict_y, mode = 1):
+    accuracy = accuracy_score(true_y, predict_y)
+    f1score = f1_score(true_y, predict_y) if mode == 1 else 'No calculate F1 score.'
+    return accuracy, f1score
 
 
 def save_model(model, path):
