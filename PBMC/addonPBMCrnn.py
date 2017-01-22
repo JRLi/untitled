@@ -21,7 +21,7 @@ def parse_label(label_type_list):
 def get_data(path, phenotype, proportion, mode=1):
     df = pd.read_table(path, index_col=0)
     target = phenotype  # As a 'Y', target
-    if mode != 1:
+    if mode != 1:   # mode 1 indicate feature list is first row, and sample is first column
         df = df.transpose
     cells = df.columns.tolist()
     features = cells[:-1]
@@ -35,24 +35,24 @@ def get_data(path, phenotype, proportion, mode=1):
 
 
 def corr(a, b):
-    return stats.pearsonr(a, b)[0]
+    return stats.pearsonr(a, b)
 
 
 def score(true_y, predict_y, mode = 1):
     accuracy = accuracy_score(true_y, predict_y)
-    f1score = f1_score(true_y, predict_y) if mode == 1 else 'No calculate F1 score.'
+    f1score = f1_score(true_y, predict_y) if mode == 1 else 'No calculate F1 score.'  # mode == 1 indicate binary data
     return accuracy, f1score
 
 
-def save_model(model, path):
+def save_model(model, path, file_name):
     json_string = model.to_json()
-    with open(path + "model.json", "w") as output:
+    with open(path + file_name + ".model.json", "w") as output:
         output.writelines(json_string)
-    model.save_weights(path + "weights.h5")
+    model.save_weights(path + file_name+ ".weights.h5")
 
 
-def load_model(path):
-    with open(path + "model.json", "r") as input:
+def load_model(path, file_name):
+    with open(path + file_name + ".model.json", "r") as input:
         model = model_from_json(input.readline())
-    model.load_weights(path + "weights.h5")
+    model.load_weights(path + file_name + ".weights.h5")
     return model
