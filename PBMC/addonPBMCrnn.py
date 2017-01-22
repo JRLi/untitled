@@ -1,6 +1,5 @@
 from keras.models import model_from_json
 from keras.utils.np_utils import to_categorical
-from numpy import transpose
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
