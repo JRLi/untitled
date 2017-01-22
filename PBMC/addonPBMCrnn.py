@@ -5,7 +5,8 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, roc_curve, auc
+import matplotlib.pyplot as plt
 
 
 def parse_label(label_type_list):
@@ -56,3 +57,27 @@ def load_model(path, file_name):
         model = model_from_json(input.readline())
     model.load_weights(path + file_name + ".weights.h5")
     return model
+
+
+def generate_results(y_test, y_score):
+    fpr, tpr, _ = roc_curve(y_test, y_score)
+    roc_auc = auc(fpr, tpr)
+    return fpr, tpr, roc_auc
+
+
+def roc_plot(fpr_dict, tpr_dict, roc_dict):
+    plt.figure(1)
+    colors = ['aqua', 'darkorange']
+    lw = 2
+    for i, color in zip(fpr_dict.keys(), colors):
+        plt.plot(fpr_dict[i], tpr_dict[i], color=color, lw=lw,
+                 label='ROC curve of {0} (area = {1:0.2f})'
+                       ''.format(i, roc_dict[i]))
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic of keras')
+    plt.legend(loc="lower right")
+    plt.show()
