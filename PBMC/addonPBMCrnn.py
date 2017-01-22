@@ -12,7 +12,7 @@ def parse_label(label_type_list):
     types = list(set(label_type_list))
     types.sort()
     types = {types[i]: i for i in range(len(types))}
-    labels = [[types[lable_type]] for lable_type in label_type_list]
+    labels = [[types[label_type]] for label_type in label_type_list]
     labels = np.array(labels)
     labels = to_categorical(labels, len(types))
     return labels, types
