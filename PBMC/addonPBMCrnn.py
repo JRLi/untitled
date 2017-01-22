@@ -38,7 +38,7 @@ def corr(a, b):
     return stats.pearsonr(a, b)
 
 
-def score(true_y, predict_y, mode = 1):
+def score(true_y, predict_y, mode=1):
     accuracy = accuracy_score(true_y, predict_y)
     f1score = f1_score(true_y, predict_y) if mode == 1 else 'No calculate F1 score.'  # mode == 1 indicate binary data
     return accuracy, f1score

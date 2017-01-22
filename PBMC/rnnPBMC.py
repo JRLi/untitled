@@ -15,7 +15,7 @@ file = 'GSE16129_19301_0_SAI_1_exacerbationAsthma'
 fpr = dict()
 tpr = dict()
 roc_auc = dict()
-
+# if the data format is not standard, must assign the mode parameter to not 1.
 data_train, labels_train, types_train, data_test, labels_test, types_test = get_data(path + file, 'Disease', 0.8)
 print('type(data_train):', type(data_train))
 print(data_train.shape)
@@ -40,6 +40,7 @@ predict_types = model.predict_classes(data_train)
 
 fpr['Training'], tpr['Training'], roc_auc['Training'] = generate_results(labels_train[:, 0], train_score[:, 0])
 correlation, p_value = corr(labels_train.argmax(1).tolist(), predict_types.tolist())
+# if the labels are not binary type, must assign the mode parameter to not 1.
 accuracy, f1score = score(labels_train.argmax(1).tolist(), predict_types.tolist())
 print("For Training\nTypes:", types_train)
 print("True Types:", labels_train.argmax(1))
