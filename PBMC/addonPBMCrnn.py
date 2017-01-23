@@ -66,7 +66,7 @@ def generate_results(y_test, y_score):
 
 def roc_plot(fpr_dict, tpr_dict, roc_dict):
     plt.figure(1)
-    colors = ['aqua', 'darkorange']
+    colors = ['darkgreen', 'darkred']
     lw = 2
     for i, color in zip(fpr_dict.keys(), colors):
         plt.plot(fpr_dict[i], tpr_dict[i], color=color, lw=lw,
