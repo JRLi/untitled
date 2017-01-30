@@ -33,7 +33,10 @@ class Usage(Exception):
 
 
 def args_parse():
-    pass
+    parser = argparse.ArgumentParser(prog='kerasTwoLayers', description=use_message, epilog="  Attention: For test!!",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("-r", "--reverse", action="store_true", help="output reverse complement")
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s beta2')
 
 
 def parse_label(label_type_list):
