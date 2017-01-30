@@ -62,10 +62,17 @@ print(obj4)
 
 # Data Frame
 # Use DataFrame() to construct a df with dict
-data_dict = {'state':['ohio', 'ohio', 'ohio', 'Nevada', 'Nevada'], 'year':[2000, 2001, 2002, 2001, 2002],
-             'pop':[1.5, 1.7, 3.6, 2.4, 2.9]}
+data_dict = {'state':['ohio', 'ohio', 'ohio', 'Nevada', 'Nevada', 'Nevada', 'NewYork'],
+             'year':[2000, 2001, 2002, 2001, 2002, 2002, 2001],
+             'pop':[1.5, 1.7, 3.6, 2.4, 2.9, 2.8, 3.9]}
 frame = DataFrame(data_dict)
 print(frame)
 # When build df, can use 'columns' and 'index' to assign the  columns and index with order.
-frame2 = DataFrame(data_dict, columns = ['year', 'state', 'pop', 'debt'], index=['one', 'two', 'three', 'four', 'five'])
+frame2 = DataFrame(data_dict, columns = ['year', 'state', 'pop', 'debt'],
+                   index=['one', 'two', 'three', 'four', 'five', 'six', 'seven'])
 print(frame2)
+print(len(frame2))
+print(frame2.iloc[1])
+print(len(frame2.iloc[1]))
+frame3 = frame2.transpose
+print(frame3)

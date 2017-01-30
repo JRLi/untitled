@@ -185,9 +185,7 @@ def main(argv=None):
             argv = args_parse()
             print('Implement reverse complement.' if argv.reverse else 'No reverse complement.')
             root = '.reverse_complement' if argv.reverse else ''
-            if argv.command is None:
-                raise Usage('No command!!\nMust input fa or fq!')
-            elif argv.command == 'fa':
+            if argv.command == 'fa':
                 print('Implement fasta mode.')
                 print(argv)
                 with open('./SummaryOfFasta.txt', 'w') as rs:
@@ -199,7 +197,7 @@ def main(argv=None):
                             dict2file(id2Seq_dict, argv.id2seq, argv.base, argv.split, [fpath, fbase, fext, root])
                         rs.write('File: {}\nTotal_contigs: {}\nMax_contig: {}\nMin_contig: {}\nn50: {}\nn90: {}\n'
                                  'Total_bases: {}\nGC_content: {}\n\n'.format(fname, tc, mxc, mic, n50, n90, tb, gcc))
-            else:
+            elif argv.command == 'fq':
                 print('Implement fastq mode.')
                 print(argv)
                 if argv.paired is None and argv.single is None:
@@ -232,6 +230,8 @@ def main(argv=None):
                             results.write(fnameR + '\t' + 'Paired end R2\n')
                             results.write('Reads_count:{}\nAverage_read_length:{}\nTotal_bases:{}\nGC_content:{}\n\n'.
                                           format(rc_r2, al_r2, tb_r2, gc_r2))
+            else:
+                raise Usage('No command!!\nMust input fa or fq!')
         print('Done.')
 
     except Usage as err:
