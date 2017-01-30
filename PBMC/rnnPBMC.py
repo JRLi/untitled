@@ -4,7 +4,7 @@ from PBMC.addonPBMCrnn import get_data, corr, save_model, load_model, score, gen
 import tensorflow as tf
 import os
 tf.python.control_flow_ops = tf
-path = 'D:/Project/PBMC/logistic_in/'
+in_path = 'D:/Project/PBMC/logistic_in/'
 out_path = 'D:/Project/PBMC/logistic_out/'
 file = 'GSE16129_19301_0_SAI_1_exacerbationAsthma'
 fpr = dict()
@@ -17,7 +17,7 @@ batch_size=10
 nb_epoch=1000
 
 # if the data format is not standard, must assign the mode parameter to not 1.
-data_train, labels_train, types_train, data_test, labels_test, types_test = get_data(path + file, 'Disease', 0.8)
+data_train, labels_train, types_train, data_test, labels_test, types_test = get_data(in_path + file, 'Disease', 0.8)
 print('type(data_train):', type(data_train))
 print(data_train.shape)
 # print('data_train.iloc[1]:',data_train.iloc[2])
