@@ -23,11 +23,12 @@ def get_data(path, phenotype, proportion, mode=1):
     target = phenotype  # As a 'Y', target
     if mode != 1:   # mode 1 indicate feature list is first row, and sample is first column
         df = df.transpose
+    train_df, test_df = train_test_split(df, train_size=proportion, random_state=1)  # train_size
     cells = df.columns.tolist()
-    features = cells[:-1]
-    train_df, test_df = train_test_split(df, train_size=proportion, random_state=1)    # train_size
-    data_train, target_train = train_df[features].values.astype('float32'), train_df[target]
-    data_test, target_test = test_df[features].values.astype('float32'), test_df[target]
+    # features = cells[:-1]
+    cells.remove(target)
+    data_train, target_train = train_df[cells].values.astype('float32'), train_df[target]
+    data_test, target_test = test_df[cells].values.astype('float32'), test_df[target]
     # np.linalg.norm
     labels_train, types_train = parse_label(target_train.tolist())
     labels_test, types_test = parse_label(target_test.tolist())

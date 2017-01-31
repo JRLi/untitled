@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.5
 """
-Created by JRLi on 2016/12/06 for python learning
+Created by JRLi on 2017/01/31 for python learning
 """
 import sys
 import argparse
@@ -37,6 +37,7 @@ def args_parse():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-r", "--reverse", action="store_true", help="output reverse complement")
     parser.add_argument('-v', '--version', action='version', version='%(prog)s beta2')
+    parser.add_argument('-i', '--input', nargs='?', help='Input data frame file')
 
 
 def parse_label(label_type_list):
@@ -54,11 +55,12 @@ def get_data(path, phenotype, proportion, mode=1):
     target = phenotype  # As a 'Y', target
     if mode != 1:   # mode 1 indicate feature list is first row, and sample is first column
         df = df.transpose
-    cells = df.columns.tolist()
-    features = cells[:-1]
     train_df, test_df = train_test_split(df, train_size=proportion, random_state=1)    # train_size
-    data_train, target_train = train_df[features].values.astype('float32'), train_df[target]
-    data_test, target_test = test_df[features].values.astype('float32'), test_df[target]
+    cells = df.columns.tolist()
+    # features = cells[:-1]
+    cells.remove(target)
+    data_train, target_train = train_df[cells].values.astype('float32'), train_df[target]
+    data_test, target_test = test_df[cells].values.astype('float32'), test_df[target]
     # np.linalg.norm
     labels_train, types_train = parse_label(target_train.tolist())
     labels_test, types_test = parse_label(target_test.tolist())
@@ -123,7 +125,7 @@ def main(argv=None):
             fpr = dict()
             tpr = dict()
             roc_auc = dict()
-
+            target = 'Disease'
             output_dim1 = 64
             output_dim2 = 32
             batch_size = 10
@@ -131,7 +133,7 @@ def main(argv=None):
 
             # if the data format is not standard, must assign the mode parameter to not 1.
             data_train, labels_train, types_train, data_test, labels_test, types_test = get_data(in_path + file,
-                                                                                                 'Disease', 0.8)
+                                                                                                 target, 0.8)
             print('type(data_train):', type(data_train))
             print(data_train.shape)
             # print('data_train.iloc[1]:',data_train.iloc[2])
