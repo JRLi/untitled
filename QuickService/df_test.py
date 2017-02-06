@@ -84,3 +84,17 @@ print(cells)
 cells.remove('state')
 print('cells:', cells)
 print(frame[cells])
+
+
+# Numpy array test
+arr = np.array([[1, 2, 3], [4, 5, 6]])
+arr2 = np.array([[1., 2, 3], [4., 5, 6], [7, 8, 9]])
+print(arr.dtype, arr2.dtype)
+print(arr2 + 0.1)
+print(np.log2(arr + 0.1))   # use pseudo count and log2
+print(arr2 * np.array([[1], [0], [1]]))     # multiplied  with vector array
+print(arr, arr2, sep='\n')
+print(arr2.reshape(1,9))
+print(arr2)
+arr3 = arr2 * np.array([[1], [0], [1]])
+print(arr3.reshape(1, 9))

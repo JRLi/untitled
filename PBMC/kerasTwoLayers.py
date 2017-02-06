@@ -35,9 +35,25 @@ class Usage(Exception):
 def args_parse():
     parser = argparse.ArgumentParser(prog='kerasTwoLayers', description=use_message, epilog="  Attention: For test!!",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-r", "--reverse", action="store_true", help="output reverse complement")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s beta2')
-    parser.add_argument('-i', '--input', nargs='?', help='Input data frame file')
+    parser.add_argument('-v', '--version', action='version', version='%(prog)s beta')
+    parser.add_argument('-o', '--output_dir',type=str, default='./keras_out/', help='out dir, default is ./keras_out/')
+    parser.add_argument('-t', '--target', type=str, default='Disease', help='target name, default is Disease')
+    parser.add_argument('-d1', '--output_dim1', type=int, default=64, help='output_dim1, default is 64')
+    parser.add_argument('-d2', '--output_dim2', type=int, default=32, help='output_dim2, default is 32')
+    parser.add_argument('-b', '--batch_size', type=int, default=10, help='batch_size, default is 10')
+    parser.add_argument('-n', '--nb_epoch', type=int, default=1000, help='nb_epoch, default is 1000')
+    parser.add_argument('-p', '--train_prop', type=float, default=0.8, help='train_proportion, default is 0.8')
+    parser.add_argument('-i', '--input', nargs='+', help='Input data frame file')
+    args = parser.parse_args()
+    return args
+
+
+def prepare_output_dir(output_dir):
+    print("prepare output dir:", output_dir)
+    if os.path.exists(output_dir):
+        pass
+    else:
+        os.mkdir(output_dir)
 
 
 def parse_label(label_type_list):
@@ -97,7 +113,7 @@ def generate_results(y_test, y_score):
     return fpr, tpr, roc_auc
 
 
-def roc_plot(fpr_dict, tpr_dict, roc_dict):
+def roc_plot(fpr_dict, tpr_dict, roc_dict, title = 'keras'):
     plt.figure(1)
     colors = ['darkgreen', 'darkred', 'darkblue', 'aqua', 'darkorange', 'pink', 'purple', 'black']  # max colors are 8
     lw = 2
@@ -110,8 +126,12 @@ def roc_plot(fpr_dict, tpr_dict, roc_dict):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic of keras')
+    plt.title('Receiver operating characteristic of ' + title)
     plt.legend(loc="lower right")
+    fig1 = plt.gcf()
+    fig1.set_size_inches(9, 9)
+    fig1.set_dpi(400)
+    fig1.savefig(title + '.png')
     plt.show()
 
 
@@ -119,66 +139,69 @@ def main(argv=None):
     try:
         if argv is None:
             argv = args_parse()
-            in_path = 'D:/Project/PBMC/logistic_in/'
-            out_path = 'D:/Project/PBMC/logistic_out/'
-            file = 'GSE16129_19301_0_SAI_1_exacerbationAsthma'
-            fpr = dict()
-            tpr = dict()
-            roc_auc = dict()
-            target = 'Disease'
-            output_dim1 = 64
-            output_dim2 = 32
-            batch_size = 10
-            nb_epoch = 1000
+            out_path = argv.output_dir
+            prepare_output_dir(out_path)
+            target = argv.target
+            output_dim1 = argv.output_dim1
+            output_dim2 = argv.output_dim2
+            batch_size = argv.batch_size
+            nb_epoch = argv.nb_epoch
+            train_prop = argv.train_prop
+            for fileWithPath in argv.input:
+                fpath, file = os.path.split(fileWithPath)
+                prefix, fext = os.path.splitext(file)
+                in_path = fpath + '/'
+                fpr = dict()
+                tpr = dict()
+                roc_auc = dict()
+                # if the data format is not standard, must assign the mode parameter to not 1.
+                data_train, labels_train, types_train, data_test, labels_test, types_test = get_data(in_path + file,
+                                                                                                     target, train_prop)
+                print('type(data_train):', type(data_train))
+                print(data_train.shape)
+                # print('data_train.iloc[1]:',data_train.iloc[2])
 
-            # if the data format is not standard, must assign the mode parameter to not 1.
-            data_train, labels_train, types_train, data_test, labels_test, types_test = get_data(in_path + file,
-                                                                                                 target, 0.8)
-            print('type(data_train):', type(data_train))
-            print(data_train.shape)
-            # print('data_train.iloc[1]:',data_train.iloc[2])
+                model = Sequential()
 
-            model = Sequential()
+                model.add(Dense(output_dim=output_dim1, input_dim=len(data_train[0]), activation="relu"))
+                model.add(Dropout(0.25))
+                model.add(Dense(output_dim2, activation="relu"))
+                model.add(Dropout(0.5))
+                model.add(Dense(len(types_train), activation="sigmoid"))
 
-            model.add(Dense(output_dim=output_dim1, input_dim=len(data_train[0]), activation="relu"))
-            model.add(Dropout(0.25))
-            model.add(Dense(output_dim2, activation="relu"))
-            model.add(Dropout(0.5))
-            model.add(Dense(len(types_train), activation="sigmoid"))
+                model.compile(loss="mse", optimizer="rmsprop")
 
-            model.compile(loss="mse", optimizer="rmsprop")
+                model.fit(data_train, labels_train, nb_epoch=nb_epoch, batch_size=batch_size)
 
-            model.fit(data_train, labels_train, nb_epoch=nb_epoch, batch_size=batch_size)
+                train_score = model.predict(data_train)
+                predict_types = model.predict_classes(data_train)
 
-            train_score = model.predict(data_train)
-            predict_types = model.predict_classes(data_train)
+                fpr['Training'], tpr['Training'], roc_auc['Training'] = generate_results(labels_train[:, 0],
+                                                                                         train_score[:, 0])
+                correlation, p_value = corr(labels_train.argmax(1).tolist(), predict_types.tolist())
+                # if the labels are not binary type, must assign the mode parameter to not 1.
+                accuracy, f1score = score(labels_train.argmax(1).tolist(), predict_types.tolist())
+                print("\nFor Training\nTypes:", types_train)
+                print("True Types:", labels_train.argmax(1))
+                print("Predict Types:", predict_types)
+                print("Corr: {}\np-value: {}".format(correlation, p_value))
+                print('Accuracy: {}\nF1 score: {}'.format(accuracy, f1score))
 
-            fpr['Training'], tpr['Training'], roc_auc['Training'] = generate_results(labels_train[:, 0],
-                                                                                     train_score[:, 0])
-            correlation, p_value = corr(labels_train.argmax(1).tolist(), predict_types.tolist())
-            # if the labels are not binary type, must assign the mode parameter to not 1.
-            accuracy, f1score = score(labels_train.argmax(1).tolist(), predict_types.tolist())
-            print("\nFor Training\nTypes:", types_train)
-            print("True Types:", labels_train.argmax(1))
-            print("Predict Types:", predict_types)
-            print("Corr: {}\np-value: {}".format(correlation, p_value))
-            print('Accuracy: {}\nF1 score: {}'.format(accuracy, f1score))
+                save_model(model, out_path, file)
+                model = load_model(out_path, file)
 
-            save_model(model, out_path, file)
-            model = load_model(out_path, file)
+                test_score = model.predict(data_test)
+                predict_types = model.predict_classes(data_test)
+                fpr['Testing'], tpr['Testing'], roc_auc['Testing'] = generate_results(labels_test[:, 0], test_score[:, 0])
+                correlation, p_value = corr(labels_test.argmax(1).tolist(), predict_types.tolist())
+                accuracy, f1score = score(labels_test.argmax(1).tolist(), predict_types.tolist())
+                print("\nFor Testing\nTypes:", types_test)
+                print("True Types:", labels_test.argmax(1))
+                print("Predict Types:", predict_types)
+                print("Corr: {}\np-value: {}".format(correlation, p_value))
+                print('Accuracy: {}\nF1 score: {}'.format(accuracy, f1score))
 
-            test_score = model.predict(data_test)
-            predict_types = model.predict_classes(data_test)
-            fpr['Testing'], tpr['Testing'], roc_auc['Testing'] = generate_results(labels_test[:, 0], test_score[:, 0])
-            correlation, p_value = corr(labels_test.argmax(1).tolist(), predict_types.tolist())
-            accuracy, f1score = score(labels_test.argmax(1).tolist(), predict_types.tolist())
-            print("\nFor Testing\nTypes:", types_test)
-            print("True Types:", labels_test.argmax(1))
-            print("Predict Types:", predict_types)
-            print("Corr: {}\np-value: {}".format(correlation, p_value))
-            print('Accuracy: {}\nF1 score: {}'.format(accuracy, f1score))
-
-            roc_plot(fpr, tpr, roc_auc)
+                roc_plot(fpr, tpr, roc_auc, file)
         print('Done.')
 
     except Usage as err:
