@@ -65,7 +65,7 @@ def generate_results(y_test, y_score):
     return fpr, tpr, roc_auc
 
 
-def roc_plot(fpr_dict, tpr_dict, roc_dict):
+def roc_plot(fpr_dict, tpr_dict, roc_dict, out_path, title = 'keras'):
     plt.figure(1)
     colors = ['darkgreen', 'darkred']
     lw = 2
@@ -78,6 +78,10 @@ def roc_plot(fpr_dict, tpr_dict, roc_dict):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Receiver operating characteristic of keras')
+    plt.title('Receiver operating characteristic of ' +title)
     plt.legend(loc="lower right")
+    fig1 = plt.gcf()
+    fig1.set_size_inches(12, 12)
+    fig1.set_dpi(1200)
+    fig1.savefig(out_path + title + '.png')
     plt.show()

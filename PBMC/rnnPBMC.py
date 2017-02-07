@@ -1,8 +1,8 @@
-from keras.models import Sequential, model_from_json
+from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from PBMC.addonPBMCrnn import get_data, corr, save_model, load_model, score, generate_results, roc_plot
 import tensorflow as tf
-import os
+
 tf.python.control_flow_ops = tf
 in_path = 'D:/Project/PBMC/logistic_in/'
 out_path = 'D:/Project/PBMC/logistic_out/'
@@ -61,4 +61,4 @@ print("Predict Types:", predict_types)
 print("Corr: {}\np-value: {}".format(correlation, p_value))
 print('Accuracy: {}\nF1 score: {}'.format(accuracy, f1score))
 
-roc_plot(fpr, tpr, roc_auc)
+roc_plot(fpr, tpr, roc_auc, out_path, file)
