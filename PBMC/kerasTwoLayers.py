@@ -19,8 +19,8 @@ import matplotlib.pyplot as plt
 tf.python.control_flow_ops = tf
 
 use_message = '''
-    Usage:  fastaqcr [-r] fa [-b BASE] [-i] input [input ...]
-            fastaqcr [-r] fq [-p Left Right] [-s [SINGLE]]
+    Usage:  kerasTwoLayers [-r] fa [-b BASE] [-i] input [input ...]
+            kerasTwoLayers [-r] fq [-p Left Right] [-s [SINGLE]]
     For help, please use "fastaqcr fa -h" or "fastaqcr fq -h".
     To calculate NGS reads length and the number of reads.
     To perform the reverse complement of fasta/fastq file.
@@ -115,9 +115,9 @@ def generate_results(y_test, y_score):
     return fpr, tpr, roc_auc
 
 
-def roc_plot(fpr_dict, tpr_dict, roc_dict, title = 'keras'):
+def roc_plot(fpr_dict, tpr_dict, roc_dict, out_path, title = 'keras'):
     plt.figure(1)
-    colors = ['darkgreen', 'darkred', 'darkblue', 'aqua', 'darkorange', 'pink', 'purple', 'black']  # max colors are 8
+    colors = ['darkgreen', 'darkred', 'darkblue', 'darkorange', 'aqua', 'pink', 'purple', 'black']  # max colors are 8
     lw = 2
     for i, color in zip(fpr_dict.keys(), colors):
         plt.plot(fpr_dict[i], tpr_dict[i], color=color, lw=lw,
@@ -134,7 +134,6 @@ def roc_plot(fpr_dict, tpr_dict, roc_dict, title = 'keras'):
     fig1.set_size_inches(12, 12)
     fig1.set_dpi(1200)
     fig1.savefig(title + '.png')
-    plt.show()
 
 
 def main(argv=None):
@@ -209,7 +208,7 @@ def main(argv=None):
                     print("Corr: {}\np-value: {}".format(correlation, p_value))
                     print('Accuracy: {}\nF1 score: {}'.format(accuracy, f1score))
 
-                    roc_plot(fpr, tpr, roc_auc, file)
+                    roc_plot(fpr, tpr, roc_auc, out_path, file)
         print('Done.')
 
     except Usage as err:
