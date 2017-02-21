@@ -47,9 +47,19 @@ def hgnc_dict(hgnc_path):
     h_dict = {}
     with open(hgnc_path, 'r', encoding='utf-8') as input:
         for line in input:
-            stringField = line.split('\t', maxsplit=2)
+            if line.startswith('hgnc_id\t'):
+                continue
+            stringField = line.split('\t', maxsplit=11)
             h_dict[stringField[1]] = stringField[0]
-    return  h_dict
+            if stringField[8] != '':
+                alias = stringField[8].split('|')
+                for a in alias:
+                    h_dict[a] = stringField[0]
+            if stringField[10] != '':
+                previous = stringField[10].split('|')
+                for p in previous:
+                    h_dict[p] = stringField[0]
+    return h_dict
 
 
 def main(argv=None):
