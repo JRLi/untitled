@@ -7,7 +7,6 @@ hgncFile = 'hgnc_complete_set.txt'
 
 df = pd.read_csv(filePath + fileName, index_col= 0)
 print(df.shape)
-# print(df.columns)
 
 df.columns = ['LNT2D', 'LNT2D', 'LNT2D', 'LNT2D', 'LNT2D', 'ONT2D', 'ONT2D', 'ONT2D', 'ONT2D', 'OWT2D', 'OWT2D',
               'OWT2D', 'OWT2D', 'OWT2D', 'OPT2D', 'OPT2D', 'OPT2D', 'OPT2D']
@@ -15,15 +14,14 @@ print(df.shape, df.columns, sep='\n')
 
 df = df_mean_columns(df)    # fixed step
 
-print('debug')
+# debug step
 print(df.iloc[0:5,])
 print(df.iloc[0:5,0]/df.iloc[0:5,1])
 print(df['LNT2D'].iloc[0:5,] / df['ONT2D'].iloc[0:5,])
 
 symbol_list = df.index.tolist()      # fixed step
 symbol2HgncDict = hgnc_dict(filePath + hgncFile)    # fixed step
-print(len(symbol2HgncDict))
-print(len(set(symbol2HgncDict.keys())), len(set(symbol2HgncDict.values())))
+print(len(symbol2HgncDict), len(set(symbol2HgncDict.keys())), len(set(symbol2HgncDict.values())))
 
 hgnc_list = [symbol2HgncDict.get(symbol,'-') for symbol in symbol_list]      # fixed step
 
@@ -38,4 +36,3 @@ for versus in out_file:
     df2['control'] = control
     df2['fc'] = (df[case] / df[control]).values
     df2.to_csv(filePath + versus + '.csv', header=False, index=False)
-
