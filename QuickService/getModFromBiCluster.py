@@ -19,14 +19,16 @@ def prepare_output_dir(output_dir='.'):
 
 
 def parse_json_to_subMatrix(mod_file, df1, fbase):
-    with open(mod_file, 'r') as json_file:
+    with open(mod_file, 'r') as json_file, open('summary', 'a') as summary:
         subMatrix_list = json.load(json_file)
         mod_index = 1
+        summary.write(fbase + '\n')
         for mod_dict in subMatrix_list:
             rows_array = np.array(mod_dict['rows']) - 1
             cols_array = np.array(mod_dict['columns']) - 1
             df2 = df1.iloc[rows_array, cols_array]
             df2.to_csv('{}/{}_{}_{}x{}.csv'.format(fbase,fbase,str(mod_index),str(len(rows_array)),str(len(cols_array))))
+            summary.write('mod{}: rows:\t{}\tcolumns:\t{}\n'.format(str(mod_index),str(len(rows_array)),str(len(cols_array))))
             mod_index += 1
 
 

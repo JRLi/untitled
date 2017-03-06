@@ -70,8 +70,14 @@ print(frame)
 # When build df, can use 'columns' and 'index' to assign the  columns and index with order.
 frame2 = DataFrame(data_dict, columns = ['year', 'state', 'pop', 'debt'],
                    index=['one', 'two', 'three', 'four', 'five', 'six', 'seven'])
+print('for "for" test')
 print(frame2)
 print(len(frame2))
+
+for col in frame2:  # important!!!!!!!!!!!! good fot column assess
+    print(col)
+    print('next')
+
 print(frame2.iloc[1])
 print(len(frame2.iloc[1]))
 frame3 = frame2.transpose
@@ -84,17 +90,83 @@ print(cells)
 cells.remove('state')
 print('cells:', cells)
 print(frame[cells])
+print(frame.iloc[:,1])
+df2 = frame[cells]
+for i in range(0,len(df2.columns)):
+    qv = np.percentile(df2.iloc[:,i], 10)
+    print(qv)
+    df2.iloc[:,i][df2.iloc[:,i]<= qv ] = qv
+    print(df2.iloc[:,i])
 
+df3 = pd.read_table('D://Project/circ_bicluster/CircRNABloodExp.csv', sep=',', index_col=0)
+df3 = df3.iloc[0:8, 0:8]
+listA = [1,3,4,6]
+listB = [1,2,3]
+np_array1 = np.array(listA) - 1
+np_array2 = np.array(listB) - 1
+print(np_array1)
+print(df3.iloc[np_array1,np_array2])    # or df3.iloc[[1,3,4],[0,1,2]]
+print(str(len(np_array1))+'x'+str(len(np_array2)))
 
-# Numpy array test
-arr = np.array([[1, 2, 3], [4, 5, 6]])
-arr2 = np.array([[1., 2, 3], [4., 5, 6], [7, 8, 9]])
-print(arr.dtype, arr2.dtype)
-print(arr2 + 0.1)
-print(np.log2(arr + 0.1))   # use pseudo count and log2
-print(arr2 * np.array([[1], [0], [1]]))     # multiplied  with vector array
-print(arr, arr2, sep='\n')
-print(arr2.reshape(1,9))
-print(arr2)
-arr3 = arr2 * np.array([[1], [0], [1]])
-print(arr3.reshape(1, 9))
+# print(qv)
+# filePath = 'E:/StringTemp/GDS/'
+# df1 = pd.read_table(filePath + 'GDS3876.matrix', index_col=0)
+# print(df1.shape)
+# print(df1.index.name)
+# print(df1.columns.name)
+# print(df1.index, df1.columns, sep='\n')
+# df1.index.name , df1.columns.name = 'genes', 'samples'
+# print(df1.shape)
+# print(df1.index.name)
+# print(df1.columns.name)
+# print(type(df1.index.name))
+# print('AAAAA')
+# print(df1.shape)
+# print(df1.index.name)
+# print(df1.columns.name)
+# print(df1)
+# df2 = df1.loc['ABAT'].iloc[:, 0:4]
+# print(df2)
+# gp = df2.groupby(df2.index)
+# print(gp.mean())
+# print(df1.shape[0], df1.shape[1])
+# print(df1.index, df1.columns, sep='\n')
+# print(df1.loc['ABAT'].iloc[:, 0:4])
+# print(df1.loc['ABAT'].iloc[:, 0:4].mean(axis=0))
+# print(df1.loc['ABAT'].iloc[:, 0:4].mean(axis=0).shape)
+# print(df1.loc['ABAT'].iloc[:, 0:4].mean(axis=0).index)
+# print(df1.index.names)
+# print(df1.loc['ABAT'].iloc[:, 0:4].shape)
+# a = df1.loc['ABAT'].iloc[:, 0:4].shape[0]
+#
+# print(df1.iloc[0:5, 0:5])
+#
+#
+# # Numpy array test
+# arr = np.array([[1, 2, 3], [4, 5, 6]])
+# arr2 = np.array([[1., 2, 3], [4., 5, 6], [7, 8, 9]])
+# print(arr.dtype, arr2.dtype)
+# print(arr2 + 0.1)
+# print(np.log2(arr + 0.1))   # use pseudo count and log2
+# print(arr2 * np.array([[1], [0], [1]]))     # multiplied  with vector array
+# print(arr, arr2, sep='\n')
+# print(arr2.reshape(1,9))
+# print(arr2)
+# arr3 = arr2 * np.array([[1], [0], [1]])
+# print(arr3.reshape(1, 9))
+# df = pd.DataFrame(arr3, copy=True)
+# arr4 = arr3.copy()
+# df2 = df.copy()
+# print(df)
+# arr3[arr3 < 3] = 3
+#
+# print(df)
+# print(df2)
+# df2[df2 < 3] = 3
+# print(df2)
+#
+# print(arr4)
+# qv = np.percentile(arr4, 10)
+# qv2 = np.percentile(arr2, 10)
+# qv3 = np.percentile(arr2, 50, 1)
+# print(qv, qv2, qv3)

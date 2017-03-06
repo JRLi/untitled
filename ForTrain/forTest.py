@@ -368,6 +368,9 @@ a = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6}
 b = OrderedDict((k, a[k]) for k in ['a','b','c','d','e'])
 print(a)
 print(b)
+
+# important
+
 def split_dict(data, size=100000):
     iter_obj = iter(data.keys())
     for i in range(0, len(data), size):
@@ -376,12 +379,14 @@ def split_dict(data, size=100000):
 
 def ordered_split(data, size=100000):
     iter_obj = iter(data.keys())
-    for i in range(0, len(data), size):
-        yield OrderedDict((k,data[k]) for k in itertools.islice(iter_obj, size))
+    for i in range(0, len(data), size): # start, stop, step
+        yield OrderedDict((k,data[k]) for k in itertools.islice(iter_obj, size))    # seq, stop
+        # not use i
 
 
 sizeA = len(a) // 2 if len(a) % 2 == 0 else len(a) // 2 + 1
-sizeB = len(a) // 2 if len(a) % 2 == 0 else len(a) // 2 + 1
+sizeB = len(b) // 2 if len(b) % 2 == 0 else len(b) // 2 + 1
+print(sizeA, sizeB)
 for dicts in split_dict(a,sizeA):
     print(dicts)
 
@@ -390,3 +395,24 @@ for dicts in split_dict(b, sizeB):
 
 for dicts in ordered_split(b, sizeB):
     print(dicts)
+
+import math
+a = 8.1
+z = 1e-4
+b = a ** (1/2)
+c = a ** (-1/2)
+d = (a ** -1/2) * (a ** -1/2)
+e = (a ** -1/2)**2
+f = a ** -1/4
+Q = -10 * math.log10(z)
+print(b, c, d, e, f, Q)
+
+import json
+import pprint
+with open('D://Project/circ_bicluster/detail_rt1.3_ct0.3_s1000.json', 'r') as in_json:
+    data = json.load(in_json)
+print(type(data), len(data))
+for element in data:
+    print(type(element), len(element))
+    for k,v in element.items():
+        print(k, len(v), v)
