@@ -1,12 +1,9 @@
 # ***************************************************************************
-# *
 # * Description: label propagation
 # * Author: Zou Xiaoyi (zouxy09@qq.com)
 # * Date:   2015-10-15
 # * HomePage: http://blog.csdn.net/zouxy09
-# *
 # **************************************************************************
-
 import math
 import numpy as np
 from Synergism import labelProgagationKnn as lp
