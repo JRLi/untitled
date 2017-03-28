@@ -20,8 +20,9 @@ def main():
                         for line in inputFile:
                             if line.startswith('id\t'):
                                 continue
-                            lf = line.split('\t')
-                            anno_file.write('{}\t{}\t{}\t{}\t{}\t{}\t{}'.format(lf[0], lf[2], lf[3], lf[4], lf[5], lf[7], lf[8]))
+                            lf = line.replace('\"', '').replace('\r\n','').replace('\n', '').split('\t')
+                            anno_file.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(
+                                lf[0], lf[2], lf[3], lf[4], lf[5], lf[7], lf[8]))
                 elif f.endswith('maf.gz'):
                     gz_count += 1
                     with gzip.open(file_path, 'rt') as inputFile:
