@@ -32,7 +32,7 @@ def main():
                             snv_file.write(line)
                 else:
                     pass
-        print(gz_count, anno_count, dir_count, all_count)
+        print('maf.gz: {}\nannotate: {}\ndir: {}\nall_process: {}\n'.format(gz_count, anno_count, dir_count, all_count))
 
 if __name__ == '__main__':
     main()
