@@ -63,8 +63,7 @@ def main(argv=None):
                 df5p[c1] = np.array(p_list)
             df5c.to_csv('./corr_{}_{}.csv'.format(cells_base, drugs_base))
             df5p.to_csv('./p_value_{}_{}.csv'.format(cells_base, drugs_base))
-            print('')
-            print(df5p)
+            print('result shape:', df5c.shape)
         print('Done.')
 
     except Usage as err:
