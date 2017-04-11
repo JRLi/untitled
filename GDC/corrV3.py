@@ -27,7 +27,7 @@ def args_parse():
 def openDF(in_path):
     fpath, fname = os.path.split(in_path)
     fbase, fext = os.path.splitext(fname)
-    df = pd.read_table(in_path, index_col=0)
+    df = pd.read_csv(in_path, index_col=0) if fext == '.csv' else pd.read_table(in_path, index_col=0)
     return df, fbase
 
 
@@ -75,9 +75,9 @@ def main(argv=None):
             print('df_cells.shape:', df_cells.shape)
             print('df_drugs.shape:', df_drugs.shape)
             df5c, df5p = corr_by_col_of_df(df_cells, df_drugs, argv.top)
-            top_suffix = '' if argv.top in (0, None) else '_top' + str(argv.top)
-            df5c.to_csv('./Corr_{}_{}{}.csv'.format(cells_base, drugs_base, top_suffix))
-            df5p.to_csv('./P_value_{}_{}{}.csv'.format(cells_base, drugs_base, top_suffix))
+            top_suffix = 'all' if argv.top in (0, None) else 'top' + str(argv.top)
+            df5c.to_csv('./Corr_{}_{}_{}.csv'.format(cells_base, drugs_base, top_suffix))
+            df5p.to_csv('./P_value_{}_{}_{}.csv'.format(cells_base, drugs_base, top_suffix))
             print('result shape:', df5c.shape)
         print('Done.')
     except Usage as err:

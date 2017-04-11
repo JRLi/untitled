@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 import os
 import sys
 import scipy.stats as st
@@ -23,7 +23,7 @@ def args_parse():
     parser = argparse.ArgumentParser(description=use_message)
     parser.add_argument('-t', '--threshold', type=int, default=10, help='log p-value threshold, default is 10')
     parser.add_argument("-m", "--median", action="store_true", help="median_normalizing mode")
-    parser.add_argument('profile', nargs='+', help="drug expression profile, separate by space")
+    parser.add_argument('profile', nargs='+', help="drug expression profile, csv or txt file list separated by space")
     args = parser.parse_args()
     return args
 
@@ -31,7 +31,7 @@ def args_parse():
 def openDF(in_path):
     fpath, fname = os.path.split(in_path)
     fbase, fext = os.path.splitext(fname)
-    df = pd.read_table(in_path, index_col=0)
+    df = pd.read_csv(in_path, index_col=0) if fext == '.csv' else pd.read_table(in_path, index_col=0)
     return df, fbase
 
 
@@ -89,12 +89,13 @@ def main(argv=None):
             for profile in file_list:
                 df1, fileBase = openDF(profile)
                 df1 = median_normalizing(df1) if argv.median else df1
+                mt = 'MN' if argv.median else ''
                 df1 = z_transfer(df1)
                 dfup = z_to_p_log_trim_split(df1, argv.threshold, 'up')
                 dfdn = z_to_p_log_trim_split(df1, argv.threshold, 'dn')
                 dfupdn = pd.concat([dfup, dfdn], axis=1)
                 dfupdn = rescale(dfupdn)
-                dfupdn.to_csv('./' + fileBase + out_suffix, sep='\t')
+                dfupdn.to_csv('./{}_{}_t{}{}'.format(fileBase, mt, str(argv.threshold), out_suffix), sep='\t')
 
 
     except Usage as err:
