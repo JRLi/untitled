@@ -7,7 +7,7 @@ import argparse
 
 use_message = '''
     Need Python3 and numpy, pandas, scipy.
-    Usage: correlationOfDF.py df1 df2
+    Usage: correlationOfDF.py [-t] df1 df2
 '''
 
 
@@ -18,7 +18,7 @@ class Usage(Exception):
 
 def args_parse():
     parser = argparse.ArgumentParser(description=use_message)
-    parser.add_argument('-t', '--top', type=int, help='base pairs per line; if set 0 equal No use top')
+    parser.add_argument('-t', '--top', type=int, help='Top and Down -t number genes; if set 0 equal No use -t')
     parser.add_argument('pairs', nargs=2, help="cell line (1) and drug (2) expression profile")
     args = parser.parse_args()
     return args
