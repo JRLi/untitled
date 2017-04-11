@@ -89,7 +89,7 @@ def main(argv=None):
             for profile in file_list:
                 df1, fileBase = openDF(profile)
                 df1 = median_normalizing(df1) if argv.median else df1
-                mt = 'MN' if argv.median else ''
+                mt = 'MN' if argv.median else 'noNM'
                 df1 = z_transfer(df1)
                 dfup = z_to_p_log_trim_split(df1, argv.threshold, 'up')
                 dfdn = z_to_p_log_trim_split(df1, argv.threshold, 'dn')
