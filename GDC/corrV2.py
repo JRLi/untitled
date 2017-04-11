@@ -36,8 +36,11 @@ def df_mean_index(df_input):
     return gp.mean()
 
 
-def d_top(top_n):
-    pass
+def s_top(series_input, top_n):
+    ss = series_input.copy()
+    ss.sort_values(inplace=True)
+    ss = ss.iloc[range(-top_n, top_n)]
+    return ss
 
 
 def main(argv=None):
@@ -49,22 +52,22 @@ def main(argv=None):
             df_cells, df_drugs = df_mean_index(df_cells), df_mean_index(df_drugs)
             print('df_cells.shape:', df_cells.shape)
             print('df_drugs.shape:', df_drugs.shape)
-            df_cd = df_cells.merge(df_drugs,left_index=True, right_index=True, how='left').dropna()
-            print('df_cd.shape:', df_cd.shape)
+            # df_cd = df_cells.merge(df_drugs,left_index=True, right_index=True, how='left').dropna()
             # create output data frames for corr and p-value
             df5c = pd.DataFrame(columns=df_cells.columns, index=df_drugs.columns)
             df5p = pd.DataFrame(columns=df_cells.columns, index=df_drugs.columns)
             print('target_shape:', df5c.shape)
             count_c, count_all = 0, 0
             for i in range(len(df_cells.columns)):
-                c1 = df_cd.columns[i]
+                c1 = df_cells.columns[i]
                 count_c += 1
                 c_list, p_list = [], []
-                for j in range(len(df_cells.columns), len(df_cd.columns)):
-                    c2 = df_cd.columns[j]
+                for j in range(len(df_drugs.columns)):
+                    c2 = df_drugs.columns[j]
                     count_all += 1
-                    ftols = pd.ols(y = df_cd[c1], x = df_cd[c2], intercept=True)
-                    c_list.append(df_cd[c1].corr(df_cd[c2]))
+                    s2 = df_drugs[c2] if argv.top in (0, None) else s_top(df_drugs[c2], argv.top)
+                    ftols = pd.ols(y = df_cells[c1], x = s2, intercept=True)
+                    c_list.append(df_cells[c1].corr(s2))
                     p_list.append(ftols.f_stat['p-value'])
                 df5c[c1] = pd.Series(c_list).values
                 df5p[c1] = np.array(p_list)
