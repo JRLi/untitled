@@ -7,7 +7,9 @@ import argparse
 
 use_message = '''
     Need Python3 and numpy, pandas, scipy.
-    Usage: correlationOfDF.py [-t] df1 df2
+    Usage: corrV3.py [-t, -c] df1 df2
+    Example: corrV3.py -t 250 -c s df1.csv df2.txt 
+    OR: corrV3.py df1 df2, will use all genes and pearson correlation.
 '''
 
 
