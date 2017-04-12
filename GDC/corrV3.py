@@ -19,6 +19,8 @@ class Usage(Exception):
 def args_parse():
     parser = argparse.ArgumentParser(description=use_message)
     parser.add_argument('-t', '--top', type=int, help='Top and Down -t number genes; if set 0 equal No use -t')
+    parser.add_argument('-c', '--corr', type=str, choices=['p', 'k', 's'],
+                        default='p', help='Correlation method, p: pearson, k: kendall, s: spearman; default is p')
     parser.add_argument('pairs', nargs=2, help="cell line (1) and drug (2) expression profile")
     args = parser.parse_args()
     return args
@@ -43,10 +45,11 @@ def s_top(series_input, top_n):
     return ss
 
 
-def corr_by_col_of_df(df_c, df_d, top):
+def corr_by_col_of_df(df_c, df_d, top, corr_m):
     dfc = pd.DataFrame(columns=df_c.columns, index=df_d.columns)
     dfp = pd.DataFrame(columns=df_c.columns, index=df_d.columns)
     print('target_shape:', dfc.shape)
+    print('correlation mode: ', corr_m)
     count_c, count_all = 0, 0
     for i in range(len(df_c.columns)):
         c1 = df_c.columns[i]
@@ -57,7 +60,7 @@ def corr_by_col_of_df(df_c, df_d, top):
             count_all += 1
             s2 = df_d[c2] if top in (0, None) else s_top(df_d[c2], top)
             ftols = pd.ols(y=df_c[c1], x=s2, intercept=True)
-            c_list.append(df_c[c1].corr(s2))
+            c_list.append(df_c[c1].corr(s2, method=corr_m))
             p_list.append(ftols.f_stat['p-value'])
         dfc[c1] = pd.Series(c_list).values
         dfp[c1] = np.array(p_list)
@@ -74,10 +77,11 @@ def main(argv=None):
             df_cells, df_drugs = df_mean_index(df_cells), df_mean_index(df_drugs)
             print('df_cells.shape:', df_cells.shape)
             print('df_drugs.shape:', df_drugs.shape)
-            df5c, df5p = corr_by_col_of_df(df_cells, df_drugs, argv.top)
+            method = {'p': 'pearson', 'k': 'kendall', 's': 'spearman'}.get(argv.corr)
+            df5c, df5p = corr_by_col_of_df(df_cells, df_drugs, argv.top, method)
             top_suffix = 'all' if argv.top in (0, None) else 'top' + str(argv.top)
-            df5c.to_csv('./Corr_{}_{}_{}.csv'.format(cells_base, drugs_base, top_suffix))
-            df5p.to_csv('./P_value_{}_{}_{}.csv'.format(cells_base, drugs_base, top_suffix))
+            df5c.to_csv('./Corr_{}_{}_{}_{}.csv'.format(cells_base, drugs_base, method, top_suffix))
+            df5p.to_csv('./P_value_{}_{}_{}_{}.csv'.format(cells_base, drugs_base, method, top_suffix))
             print('result shape:', df5c.shape)
         print('Done.')
     except Usage as err:
