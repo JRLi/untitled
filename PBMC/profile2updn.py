@@ -94,15 +94,22 @@ def main(argv=None):
             file_list = argv.profile
             for profile in file_list:
                 df1, fileBase = openDF(profile)
+                print(df1.shape)
+                print(df1.columns[0])
+                print(df1.index[0])
                 df1 = df_mean_index(df1) if argv.indexMean else df1
+                print(argv.indexMean, df1.shape)
                 df1 = median_normalizing(df1) if argv.median else df1
+                # df1.to_csv('test.csv')
+                print(argv.median, df1.shape)
                 mt = 'MN' if argv.median else 'noNM'
                 df1 = z_transfer(df1, argv.direct)
+                dir = '' if argv.direct == 'n' else '_rev'
                 dfup = z_to_p_log_trim_split(df1, argv.threshold, 'up')
                 dfdn = z_to_p_log_trim_split(df1, argv.threshold, 'dn')
                 dfupdn = pd.concat([dfup, dfdn], axis=1)
                 dfupdn = rescale(dfupdn)
-                dfupdn.to_csv('./{}_{}_t{}{}'.format(fileBase, mt, str(argv.threshold), out_suffix), sep='\t')
+                dfupdn.to_csv('./{}_{}_t{}{}{}'.format(fileBase, mt, str(argv.threshold), dir, out_suffix), sep='\t')
 
 
     except Usage as err:

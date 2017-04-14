@@ -120,6 +120,7 @@ def main():
     print(df1.shape)
     df1 = df_mean_index(df1)
     print(df1.shape)
+    df1.to_csv('rankMatrix_covertGID_meanID.csv')
     df1 = z_transfer_mode_select(df1, 'r')  # reverse Z
     print(df1.shape)
     df1.to_csv('./CMAP_rank_reverseZscore.csv')
