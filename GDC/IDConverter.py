@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+import scipy.stats.mstats as mt
+import pandas as pd
+import os
 lincs_exp_path = './'
 
 
@@ -77,9 +80,49 @@ def process_gdsc_exp():
                     out1.write('{}\t{}\n'.format(gid, lf[1]))
 
 
+def openDF(in_path):
+    fpath, fname = os.path.split(in_path)
+    fbase, fext = os.path.splitext(fname)
+    df = pd.read_csv(in_path, index_col=0) if fext == '.csv' else pd.read_table(in_path, index_col=0)
+    return df, fbase
+
+
+def df_mean_index(df_input):
+    gp = df_input.groupby(df_input.index)
+    return gp.mean()
+
+
+def z_transfer_mode_select(df_input, mode='n'):
+    df = df_input.copy()
+    # mean and std track column from row index 0 to end, so axis use default (index 0).
+    avg = df.mean()
+    std = df.std()
+    for k in range(len(df.columns)):
+        df.iloc[:, k] = (df.iloc[:, k] - avg[k]) / std[k]
+    if mode == 'n':
+        return df
+    else:
+        return -df
+
+
+def scipy_z_transfer(df_input):
+    df = df_input.copy()
+    for k in range(len(df.columns)):
+        df.iloc[:, k] = mt.zscore(df.iloc[:, k], ddof=1)
+    return df
+
+
 def main():
-    p2id_dict = get_probe2gene_dict('./LINCS_GPL20573_probe2geneid.txt')
-    out_cmap_with_geneid('./rankMatrix.txt', p2id_dict)
+    # process_gdsc_exp()
+    # p2id_dict = get_probe2gene_dict('./LINCS_GPL20573_probe2geneid.txt')
+    # out_cmap_with_geneid('./rankMatrix.txt', p2id_dict)
+    df1, file_base = openDF('./rankMatrix_covertGID.txt')
+    print(df1.shape)
+    df1 = df_mean_index(df1)
+    print(df1.shape)
+    df1 = z_transfer_mode_select(df1, 'r')  # reverse Z
+    print(df1.shape)
+    df1.to_csv('./CMAP_rank_reverseZscore.csv')
 
 if __name__ == '__main__':
     main()
