@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 import argparse
+import datetime
 import scipy.stats as st
 
 use_message = '''
@@ -95,12 +96,18 @@ def main(argv=None):
     try:
         if argv is None:
             argv = args_parse()
+            time_1 = datetime.datetime.now()
+            print('start time:', str(time_1))
             df_cells, cells_base = openDF(argv.pairs[0])
             df_drugs, drugs_base = openDF(argv.pairs[1])
+            time_2 = datetime.datetime.now()
+            print('after read data frames:', str(time_2))
             print('file1: ' + cells_base, 'file2:' + drugs_base, sep='\t')
             print('df1.shape: ', df_cells.shape)
             print('df2.shape: ', df_drugs.shape)
             df_cells, df_drugs = df_mean_index(df_cells), df_mean_index(df_drugs)
+            time_3 = datetime.datetime.now()
+            print('after mean data frames:', str(time_3))
             print('df_cells.shape after mean normalization:', df_cells.shape)
             print('df_drugs.shape after mean normalization:', df_drugs.shape)
             method = {'p': 'pearson', 'k': 'kendall', 's': 'spearman'}.get(argv.corr)
@@ -109,9 +116,14 @@ def main(argv=None):
             df5c, df5p = corr_by_col_of_df(df_cells, df_drugs, argv.top, method, parser)
             top_suffix = 'all' if argv.top in (0, None) else 'top' + str(argv.top)
             print('Use Top:', top_suffix)
+            time_4 = datetime.datetime.now()
+            print('after correlation:', str(time_4))
             df5c.to_csv('./Corr_{}_{}_{}_{}_{}.csv'.format(cells_base, drugs_base, parser, method, top_suffix))
             df5p.to_csv('./P_value_{}_{}_{}_{}_{}.csv'.format(cells_base, drugs_base, parser, method, top_suffix))
             print('result shape:', df5c.shape)
+            time_5 = datetime.datetime.now()
+            print('Finished time:', str(time_5))
+            print('All used time:', str(time_5 - time_1))
         print('Done.\n')
 
     except Usage as err:
