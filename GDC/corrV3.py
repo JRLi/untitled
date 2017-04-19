@@ -95,9 +95,9 @@ def corr_by_col_of_df(df_c, df_d, top, corr_m, parser):
 def main(argv=None):
     try:
         if argv is None:
-            argv = args_parse()
             time_1 = datetime.datetime.now()
             print('start time:', str(time_1))
+            argv = args_parse()
             df_cells, cells_base = openDF(argv.pairs[0])
             df_drugs, drugs_base = openDF(argv.pairs[1])
             time_2 = datetime.datetime.now()
