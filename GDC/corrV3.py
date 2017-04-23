@@ -28,15 +28,19 @@ def args_parse():
                         default='p', help='Correlation method, p: pearson, k: kendall, s: spearman; default is p')
     parser.add_argument('-p', '--parser', type=str, choices=['p', 's'],
                         default='s', help='Correlation parser, p: pandas, s: scipy, default is s')
+    parser.add_argument('-d', '--direct', choices=['n', 't'],
+                        default=('n', 'n'), nargs=2, help="n is normal, t is transpose; default is n n")
     parser.add_argument('pairs', nargs=2, help="cell line (1) and drug (2) expression profile")
     args = parser.parse_args()
     return args
 
 
-def openDF(in_path):
+def openDF(in_path, direct):
     fpath, fname = os.path.split(in_path)
     fbase, fext = os.path.splitext(fname)
     df = pd.read_csv(in_path, index_col=0) if fext == '.csv' else pd.read_table(in_path, index_col=0)
+    if direct == 't':
+        df = df.transpose()
     return df, fbase
 
 
@@ -98,8 +102,8 @@ def main(argv=None):
             time_1 = datetime.datetime.now()
             print('start time:', str(time_1))
             argv = args_parse()
-            df_cells, cells_base = openDF(argv.pairs[0])
-            df_drugs, drugs_base = openDF(argv.pairs[1])
+            df_cells, cells_base = openDF(argv.pairs[0], argv.direct[0])
+            df_drugs, drugs_base = openDF(argv.pairs[1], argv.direct[1])
             time_2 = datetime.datetime.now()
             print('after read data frames:', str(time_2))
             print('file1: ' + cells_base, 'file2:' + drugs_base, sep='\t')
