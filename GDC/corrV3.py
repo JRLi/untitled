@@ -29,7 +29,7 @@ def args_parse():
     parser.add_argument('-p', '--parser', type=str, choices=['p', 's'],
                         default='s', help='Correlation parser, p: pandas, s: scipy, default is s')
     parser.add_argument('-d', '--direct', choices=['n', 't'],
-                        default=('n', 'n'), nargs=2, help="n is normal, t is transpose; default is n n")
+                        default=['n', 'n'], nargs=2, help="n is normal, t is transpose; default is n n")
     parser.add_argument('pairs', nargs=2, help="cell line (1) and drug (2) expression profile")
     args = parser.parse_args()
     return args
@@ -114,6 +114,10 @@ def main(argv=None):
             print('after mean data frames:', str(time_3))
             print('df_cells.shape after mean normalization:', df_cells.shape)
             print('df_drugs.shape after mean normalization:', df_drugs.shape)
+            df_cells = df_cells.loc[(df_cells!=0).any(1), (df_cells!=0).any(0)]
+            df_drugs = df_drugs.loc[(df_drugs!=0).any(1), (df_drugs!=0).any(0)]
+            print('df_cells.shape after remove all zero rows and columns:', df_cells.shape)
+            print('df_drugs.shape after remove all zero rows and columns:', df_drugs.shape)
             method = {'p': 'pearson', 'k': 'kendall', 's': 'spearman'}.get(argv.corr)
             parser = {'p': 'pandas', 's': 'scipy'}.get(argv.parser)
             print('correlation mode: ', method, '\n', 'tools: ', parser, sep='')
