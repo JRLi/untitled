@@ -25,7 +25,8 @@ def args_parse():
     parser.add_argument("-i", "--indexMean", action="store_true", help="mean value according to index")
     parser.add_argument('-d', '--direct', type=str, choices=['n', 'r'],
                         default='n', help='value direction, n: normal, r: reverse(i.e. cmap), default is n')
-    parser.add_argument("-m", "--median", action="store_true", help="median_normalizing mode")
+    parser.add_argument("-m", "--median", action="store_false", help="median_normalizing mode, is set, no use it")
+    parser.add_argument("-z", "--zscore", action="store_false", help="z score transfer, is set, no use it")
     parser.add_argument('profile', nargs='+', help="drug expression profile, csv or txt file list separated by space")
     args = parser.parse_args()
     return args
@@ -40,11 +41,13 @@ def openDF(in_path):
 
 def median_normalizing(df_input):
     df = df_input.copy()
+    print('median normalization')
     return df.sub(df.median(axis=1), axis=0)
 
 
 def z_transfer(df_input, mode):
     df = df_input.copy()
+    print('z score transfer.')
     # mean and std track column from row index 0 to end, so axis use default (index 0).
     avg = df.mean()
     std = df.std()
@@ -60,12 +63,16 @@ def z_to_p_log_trim_split(df_input, z_threshold, mode):
     df= df_input.copy()
     if mode == 'up':
         for k in range(len(df.columns)):
+            if (k + 1) % 500 == 0:
+                print(k + 1)
             df.iloc[:, k][df.iloc[:, k] < 0] = 0
             df.iloc[:, k] = -np.log10(st.norm.cdf(-df.iloc[:, k]) * 2)
             df.iloc[:, k][df.iloc[:, k] > z_threshold] = z_threshold
         df = df.add_suffix('_up')
     else:
         for k in range(len(df.columns)):
+            if (k + 1) % 500 == 0:
+                print(k + 1)
             df.iloc[:, k][df.iloc[:, k] > 0] = 0
             df.iloc[:, k] = -np.log10(st.norm.cdf(df.iloc[:, k]) * 2)
             df.iloc[:, k][df.iloc[:, k] > z_threshold] = z_threshold
@@ -84,6 +91,7 @@ def rescale(df_input):
 
 def df_mean_index(df_input):
     gp = df_input.groupby(df_input.index)
+    print('mean group by index.')
     return gp.mean()
 
 
@@ -91,6 +99,7 @@ def main(argv=None):
     try:
         if argv is None:
             argv = args_parse()
+            print(argv)
             file_list = argv.profile
             for profile in file_list:
                 df1, fileBase = openDF(profile)
@@ -103,7 +112,7 @@ def main(argv=None):
                 # df1.to_csv('test.csv')
                 print(argv.median, df1.shape)
                 mt = 'MN' if argv.median else 'noNM'
-                df1 = z_transfer(df1, argv.direct)
+                df1 = z_transfer(df1, argv.direct) if argv.zscore else df1
                 dir = '' if argv.direct == 'n' else '_rev'
                 dfup = z_to_p_log_trim_split(df1, argv.threshold, 'up')
                 dfdn = z_to_p_log_trim_split(df1, argv.threshold, 'dn')

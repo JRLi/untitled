@@ -39,6 +39,7 @@ def openDF(in_path, direct):
     fpath, fname = os.path.split(in_path)
     fbase, fext = os.path.splitext(fname)
     df = pd.read_csv(in_path, index_col=0) if fext == '.csv' else pd.read_table(in_path, index_col=0)
+    print('Transpose:', direct)
     if direct == 't':
         df = df.transpose()
     return df, fbase

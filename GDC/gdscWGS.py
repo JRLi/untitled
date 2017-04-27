@@ -24,7 +24,7 @@ def main():
 
         for mut_id in mut_list:
             cell_check_list = mut2cell_dict[mut_id]
-            if len(set(cell_check_list)) < frequency:
+            if len(set(cell_check_list)) < frequency:   # use set and list will make the result number different
                 continue
             v_list = [mut_id]
             for cell in cell_list:
