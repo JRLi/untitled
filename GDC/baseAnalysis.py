@@ -10,7 +10,7 @@ use_message = '''
     Need Python3.6 and numpy, pandas; or Anaconda.
     Usage: baseAnalysis.py [-t, -c] data reg.
     reg is a regulation profile performed by profile2updn.py.
-    Example: nohup python -u baseAnalysis.py data.csv reg_updn.txt 
+    Example: nohup python -u baseAnalysis.py -q a -p 1000 data.csv reg_updn.txt 
 '''
 
 
