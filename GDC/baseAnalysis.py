@@ -2,6 +2,7 @@
 import argparse
 import sys
 import os
+import datetime
 import pandas as pd
 import secrets
 import numpy as np
@@ -123,10 +124,15 @@ def normalize_ES(es, pos_es, neg_es):
 def main(argv=None):
     if argv is None:
         argv = args_parse()
-        print(argv)
+        time_1 = datetime.datetime.now()
+        print('Start time:', str(time_1))
+
         data, data_base = openDF(argv.pairs[0], argv.direct[0])
         reg, reg_base = openDF(argv.pairs[1], argv.direct[1])
         data = quantileNormalize(data, argv.qType)
+        time_2 = datetime.datetime.now()
+        print('Finish quantile normalization:', str(time_2))
+
         qn_suffix = '_qnMedian' if argv.qType == 'm' else '_qnMean'
         ixs = reg.index.intersection(data.index)    # index order is followed later df
         #ixs = [ix for ix in data.index if ix in reg.index]
@@ -136,11 +142,20 @@ def main(argv=None):
         data = data if argv.no_median else median_normalizing(data)
         nm_suffix = '_noNM' if argv.no_median else '_NM'
         es = calculate_ES(data, reg)
+        time_3 = datetime.datetime.now()
+        print('Finish ES calculation, prepare to permutation:', str(time_3))
+
         pos_es, neg_es = permutation(data, reg, argv.perm)
         es = normalize_ES(es, pos_es, neg_es)
         es = es.add_suffix('.ES')
         print('es shape:', es.shape)
+        time_4 = datetime.datetime.now()
+        print('After permutation:', str(time_4))
+
         es.to_csv('./{}_{}{}{}_perm{}_ES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm), na_rep='NA')
+        time_5 = datetime.datetime.now()
+        print('Finished time:', str(time_5))
+        print('All used time:', str(time_5 - time_1))
 
 if __name__ == "__main__":
     sys.exit(main())
