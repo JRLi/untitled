@@ -9,7 +9,7 @@ import argparse
 use_message = '''
     To transfer the expression profile matrix to up and down matrix for base algorithm.
     Need Python3 and numpy, pandas, scipy.
-    If need median_normalizing, assign '-m'.
+    If "NO" need median_normalizing, assign '-m'.
 '''
 out_suffix = '_up_down.txt'
 
