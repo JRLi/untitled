@@ -121,6 +121,14 @@ def normalize_ES(es, pos_es, neg_es):
     return es
 
 
+def final_ES(df_input):
+    df_up = df_input.iloc[:, 0:len(df_input.columns) // 2]
+    df_dn = df_input.iloc[:, len(df_input.columns) // 2:len(df_input.columns)]
+    df_all = df_up - df_dn.values
+    df_all.columns = [c[:-6] for c in df_all.columns]
+    return df_all
+
+
 def main(argv=None):
     if argv is None:
         argv = args_parse()
@@ -131,7 +139,7 @@ def main(argv=None):
         reg, reg_base = openDF(argv.pairs[1], argv.direct[1])
         data = quantileNormalize(data, argv.qType)
         time_2 = datetime.datetime.now()
-        print('Finish quantile normalization:', str(time_2))
+        print('Finish quantile normalization:', str(time_2 - time_1))
 
         qn_suffix = '_qnMedian' if argv.qType == 'm' else '_qnMean'
         ixs = reg.index.intersection(data.index)    # index order is followed later df
@@ -143,16 +151,18 @@ def main(argv=None):
         nm_suffix = '_noNM' if argv.no_median else '_NM'
         es = calculate_ES(data, reg)
         time_3 = datetime.datetime.now()
-        print('Finish ES calculation, prepare to permutation:', str(time_3))
+        print('Finish ES calculation, prepare to permutation:', str(time_3 - time_2))
 
         pos_es, neg_es = permutation(data, reg, argv.perm)
         es = normalize_ES(es, pos_es, neg_es)
         es = es.add_suffix('.ES')
         print('es shape:', es.shape)
         time_4 = datetime.datetime.now()
-        print('After permutation:', str(time_4))
+        print('After permutation:', str(time_4 - time_3))
 
         es.to_csv('./{}_{}{}{}_perm{}_ES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm), na_rep='NA')
+        fes = final_ES(es)
+        fes.to_csv('./{}_{}{}{}_perm{}_finalES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm), na_rep='NA')
         time_5 = datetime.datetime.now()
         print('Finished time:', str(time_5))
         print('All used time:', str(time_5 - time_1))
