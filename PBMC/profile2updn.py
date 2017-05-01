@@ -10,8 +10,9 @@ use_message = '''
     To transfer the expression profile matrix to up and down matrix for base algorithm.
     Need Python3 and numpy, pandas, scipy.
     If "NO" need median_normalizing, assign '-m'.
+    If "NO" need z score transfer, assign '-z'.
 '''
-out_suffix = '_up_down.txt'
+out_suffix = '_up_down.csv'
 
 
 class Usage(Exception):
@@ -25,6 +26,8 @@ def args_parse():
     parser.add_argument("-i", "--indexMean", action="store_true", help="mean value according to index")
     parser.add_argument('-d', '--direct', type=str, choices=['n', 'r'],
                         default='n', help='value direction, n: normal, r: reverse(i.e. cmap), default is n')
+    parser.add_argument('-o', '--out_th', type=int, default=0, help='if not 0, remove outline z-score to prevent '
+                                                                    'divide by zero encountered in log10')
     parser.add_argument("-m", "--median", action="store_false", help="median_normalizing mode, is set, no use it")
     parser.add_argument("-z", "--zscore", action="store_false", help="z score transfer, is set, no use it")
     parser.add_argument('profile', nargs='+', help="drug expression profile, csv or txt file list separated by space")
@@ -59,20 +62,23 @@ def z_transfer(df_input, mode):
         return -df
 
 
+def rm_outline(df_input, out_th):
+    df = df_input.copy()
+    df[df > out_th] = out_th
+    df[df < -out_th] = -out_th
+    return df
+
+
 def z_to_p_log_trim_split(df_input, z_threshold, mode):
     df= df_input.copy()
     if mode == 'up':
         for k in range(len(df.columns)):
-            if (k + 1) % 500 == 0:
-                print(k + 1)
             df.iloc[:, k][df.iloc[:, k] < 0] = 0
             df.iloc[:, k] = -np.log10(st.norm.cdf(-df.iloc[:, k]) * 2)
             df.iloc[:, k][df.iloc[:, k] > z_threshold] = z_threshold
         df = df.add_suffix('_up')
     else:
         for k in range(len(df.columns)):
-            if (k + 1) % 500 == 0:
-                print(k + 1)
             df.iloc[:, k][df.iloc[:, k] > 0] = 0
             df.iloc[:, k] = -np.log10(st.norm.cdf(df.iloc[:, k]) * 2)
             df.iloc[:, k][df.iloc[:, k] > z_threshold] = z_threshold
@@ -113,12 +119,16 @@ def main(argv=None):
                 print(argv.median, df1.shape)
                 mt = 'MN' if argv.median else 'noNM'
                 df1 = z_transfer(df1, argv.direct) if argv.zscore else df1
+                zt = 'ZT' if argv.zscore else 'noZT'
                 dir = '' if argv.direct == 'n' else '_rev'
+                df1 = rm_outline(df1, argv.out_th) if argv.out_th !=0 else df1
+                otz = '_ot' + str(argv.out_th) if argv.out_th !=0 else ''
                 dfup = z_to_p_log_trim_split(df1, argv.threshold, 'up')
                 dfdn = z_to_p_log_trim_split(df1, argv.threshold, 'dn')
                 dfupdn = pd.concat([dfup, dfdn], axis=1)
                 dfupdn = rescale(dfupdn)
-                dfupdn.to_csv('./{}_{}_t{}{}{}'.format(fileBase, mt, str(argv.threshold), dir, out_suffix), sep='\t')
+                dfupdn.to_csv('./{}_{}_{}_t{}{}{}{}'.format(
+                    fileBase, mt, zt,str(argv.threshold), dir, otz, out_suffix), na_rep='NA')
 
 
     except Usage as err:
