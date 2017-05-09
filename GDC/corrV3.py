@@ -107,18 +107,21 @@ def main(argv=None):
             df_drugs, drugs_base = openDF(argv.pairs[1], argv.direct[1])
             time_2 = datetime.datetime.now()
             print('after read data frames:', str(time_2))
-            print('file1: ' + cells_base, 'file2:' + drugs_base, sep='\t')
+            print('file1: ' + cells_base, 'file2: ' + drugs_base, sep='\t')
             print('df1.shape: ', df_cells.shape)
             print('df2.shape: ', df_drugs.shape)
+
             df_cells, df_drugs = df_mean_index(df_cells), df_mean_index(df_drugs)
             time_3 = datetime.datetime.now()
             print('after mean data frames:', str(time_3))
             print('df_cells.shape after mean normalization:', df_cells.shape)
             print('df_drugs.shape after mean normalization:', df_drugs.shape)
+
             df_cells = df_cells.loc[(df_cells!=0).any(1), (df_cells!=0).any(0)]
             df_drugs = df_drugs.loc[(df_drugs!=0).any(1), (df_drugs!=0).any(0)]
             print('df_cells.shape after remove all zero rows and columns:', df_cells.shape)
             print('df_drugs.shape after remove all zero rows and columns:', df_drugs.shape)
+
             method = {'p': 'pearson', 'k': 'kendall', 's': 'spearman'}.get(argv.corr)
             parser = {'p': 'pandas', 's': 'scipy'}.get(argv.parser)
             print('correlation mode: ', method, '\n', 'tools: ', parser, sep='')
@@ -127,6 +130,7 @@ def main(argv=None):
             print('Use Top:', top_suffix)
             time_4 = datetime.datetime.now()
             print('after correlation:', str(time_4))
+
             df5c.to_csv('./Corr_{}_{}_{}_{}_{}.csv'.format(cells_base, drugs_base, parser, method, top_suffix))
             df5p.to_csv('./P_value_{}_{}_{}_{}_{}.csv'.format(cells_base, drugs_base, parser, method, top_suffix))
             print('result shape:', df5c.shape)

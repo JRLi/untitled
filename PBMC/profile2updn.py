@@ -110,26 +110,30 @@ def main(argv=None):
             for profile in file_list:
                 df1, fileBase = openDF(profile)
                 print(df1.shape)
-                print(df1.columns[0])
-                print(df1.index[0])
+                print('DF first column is:', df1.columns[0])
+                print('DF first row is:', df1.index[0])
+
                 df1 = df_mean_index(df1) if argv.indexMean else df1
-                print(argv.indexMean, df1.shape)
+                print('Mean by same index:', argv.indexMean, df1.shape)
+
                 df1 = median_normalizing(df1) if argv.median else df1
-                # df1.to_csv('test.csv')
-                print(argv.median, df1.shape)
+                print('Median_normalization:', argv.median, df1.shape)
                 mt = 'MN' if argv.median else 'noNM'
+
                 df1 = z_transfer(df1, argv.direct) if argv.zscore else df1
                 zt = 'ZT' if argv.zscore else 'noZT'
                 dir = '' if argv.direct == 'n' else '_rev'
+
                 df1 = rm_outline(df1, argv.out_th) if argv.out_th !=0 else df1
                 otz = '_ot' + str(argv.out_th) if argv.out_th !=0 else ''
+
                 dfup = z_to_p_log_trim_split(df1, argv.threshold, 'up')
                 dfdn = z_to_p_log_trim_split(df1, argv.threshold, 'dn')
                 dfupdn = pd.concat([dfup, dfdn], axis=1)
+
                 dfupdn = rescale(dfupdn)
                 dfupdn.to_csv('./{}_{}_{}_t{}{}{}{}'.format(
                     fileBase, mt, zt,str(argv.threshold), dir, otz, out_suffix), na_rep='NA')
-
 
     except Usage as err:
         print(sys.stderr, err.msg)

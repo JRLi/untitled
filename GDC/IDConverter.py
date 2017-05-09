@@ -116,7 +116,16 @@ def main():
     # process_gdsc_exp()
     # p2id_dict = get_probe2gene_dict('./LINCS_GPL20573_probe2geneid.txt')
     # out_cmap_with_geneid('./rankMatrix.txt', p2id_dict)
+    mut2cell_dict = {}
+    with open('D://Project/drs/gdsc/release_6.0/WES_variants.txt', 'r') as input_file, \
+            open('D://Project/drs/gdsc/release_6.0/gdsc_WES_df.txt', 'w') as output_file:
+        for line in input_file:
+            sf = line.split('\t')
+            cell_list = mut2cell_dict.get(sf[1],default=[])
+            cell_list.append(sf[0])
+    '''
     df1, file_base = openDF('./rankMatrix_covertGID.txt')
+    df1 = df1.iloc[:, :-1]  # remove last column
     print(df1.shape)
     df1 = df_mean_index(df1)
     print(df1.shape)
@@ -124,6 +133,7 @@ def main():
     df1 = z_transfer_mode_select(df1, 'r')  # reverse Z
     print(df1.shape)
     df1.to_csv('./CMAP_rank_reverseZscore.csv')
+    '''
 
 if __name__ == '__main__':
     main()

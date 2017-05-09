@@ -72,7 +72,7 @@ def get_data(path, phenotype, proportion, mode=1):
     df = pd.read_table(path, index_col=0)
     target = phenotype  # As a 'Y', target
     if mode != 1:   # mode 1 indicate feature list is first row, and sample is first column
-        df = df.transpose
+        df = df.transpose()
     train_df, test_df = train_test_split(df, train_size=proportion, random_state=1)    # train_size
     cells = df.columns.tolist()
     # features = cells[:-1]

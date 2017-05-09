@@ -133,7 +133,7 @@ def main(argv=None):
     if argv is None:
         argv = args_parse()
         time_1 = datetime.datetime.now()
-        print('Start time:', str(time_1))
+        print('\nStart time:', str(time_1))
 
         data, data_base = openDF(argv.pairs[0], argv.direct[0])
         reg, reg_base = openDF(argv.pairs[1], argv.direct[1])
