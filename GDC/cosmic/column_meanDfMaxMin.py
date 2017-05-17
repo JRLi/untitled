@@ -23,7 +23,7 @@ def main():
         print('no input file')
         sys.exit(0)
     df_path = sys.argv[1]
-    df1, df_base = openDF(df_path)  # if need transpose, direct set to 't'
+    df1, df_base = openDF(df_path)  # if need transpose, set direct  to 't'
     avg, std, minV, maxV = df_column_stat(df1)
     df2 = pd.DataFrame(columns=['avg', 'std', 'max', 'min'])
     df2['avg'] = avg
