@@ -68,8 +68,8 @@ def main(argv=None):
     df_c = create_stat_df(avg_c, std_c, max_c, min_c)
     df_i = create_stat_df(avg_i, std_i, max_i, min_i)
     df1.to_csv('{}{}.csv'.format(df_base, trans))
-    df_c.to_csv('{}_column_wise.csv'.format(df_base))
-    df_i.to_csv('{}_index_wise.csv'.format(df_base))
+    df_c.to_csv('Summary_col_{}{}.csv'.format(df_base, trans))
+    df_i.to_csv('Summary_row_{}{}.csv'.format(df_base, trans))
 
 if __name__ == '__main__':
     sys.exit(main())
