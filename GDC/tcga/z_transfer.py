@@ -1,8 +1,18 @@
 #!/usr/bin/env python
 import sys
 import os
+import argparse
 import pandas as pd
 import scipy.stats.mstats as mt
+
+
+def args_parse():
+    parser = argparse.ArgumentParser(description='z_transfer.py')
+    parser.add_argument('-d', '--direct', choices=['c', 'i'],
+                        default='c', help="standardizing within a column (c) or a index (i); default is c")
+    parser.add_argument('-i', '--inputDF', help='data frame before split')
+    args = parser.parse_args()
+    return args
 
 
 def openDF(in_path, direct = 'f'):
@@ -14,34 +24,52 @@ def openDF(in_path, direct = 'f'):
     return df, fbase
 
 
-def scipy_z_transfer(df_input):
+def scipy_z_transfer(df_input, direct):
     df = df_input.copy()
-    for k in range(len(df.columns)):
-        df.iloc[:, k] = mt.zscore(df.iloc[:, k], ddof=1)
+    if direct == 'c':
+        for k in range(len(df.columns)):
+            df.iloc[:, k] = mt.zscore(df.iloc[:, k], ddof=1)
+    else:
+        for k in range(len(df.index)):
+            df.iloc[k, :] = mt.zscore(df.iloc[k, :], ddof=1)
     return df
 
 
-def df_column_stat(df_input):
+def df_column_wise_stat(df_input):
     df = df_input.copy()
-    return df.mean(), df.std(), df.min(), df.max()
+    return df.mean(), df.std(), df.max(), df.min()
 
 
-def main():
-    if len(sys.argv) != 2:
-        sys.exit(0)
-    df1, df_base = openDF(sys.argv[1])
+def df_index_wise_stat(df_input):
+    df = df_input.copy()
+    return df.mean(1), df.std(1),  df.max(1), df.min(1)
+
+
+def create_stat_df(avg_series, std_series, max_series, min_series):
+    df = pd.DataFrame()
+    df['avg'] = avg_series
+    df['std'] = std_series
+    df['max'] = max_series
+    df['min'] = min_series
+    return df
+
+
+def main(argv=None):
+    if argv is None:
+        argv = args_parse()
+    print(argv)
+    df1, df_base = openDF(argv.inputDF)
     print(df1.shape)
-    df1 = scipy_z_transfer(df1)
+    df1 = scipy_z_transfer(df1, argv.direct)
+    trans = '_col_wiseZ' if argv.direct == 'c' else '_row_wiseZ'
     print(df1.shape)
-    avg, std, minV, maxV = df_column_stat(df1)
-    # df4 = pd.DataFrame(columns=['avg', 'std', 'max', 'min'])
-    df2 = pd.DataFrame()
-    df2['avg'] = avg
-    df2['std'] = std
-    df2['max'] = maxV
-    df2['min'] = minV
-    df1.to_csv('{}_zScore.csv'.format(df_base))
-    df2.to_csv('{}_summary.csv'.format(df_base))
+    avg_c, std_c, max_c, min_c = df_column_wise_stat(df1)
+    avg_i, std_i, max_i, min_i = df_index_wise_stat(df1)
+    df_c = create_stat_df(avg_c, std_c, max_c, min_c)
+    df_i = create_stat_df(avg_i, std_i, max_i, min_i)
+    df1.to_csv('{}{}.csv'.format(df_base, trans))
+    df_c.to_csv('{}_column_wise.csv'.format(df_base))
+    df_i.to_csv('{}_index_wise.csv'.format(df_base))
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
