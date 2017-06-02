@@ -159,8 +159,7 @@ def main(argv=None):
         print('es shape:', es.shape)
         time_4 = datetime.datetime.now()
         print('After permutation:', str(time_4 - time_3))
-
-        es.to_csv('./{}_{}{}{}_perm{}_ES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm), na_rep='NA')
+        #es.to_csv('./{}_{}{}{}_perm{}_ES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm), na_rep='NA')
         fes = final_ES(es)
         fes.to_csv('./{}_{}{}{}_perm{}_finalES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm), na_rep='NA')
         time_5 = datetime.datetime.now()
