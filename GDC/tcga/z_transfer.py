@@ -35,23 +35,15 @@ def scipy_z_transfer(df_input, direct):
     return df
 
 
-def df_column_wise_stat(df_input):
+def df_stat(df_input, direct='col_wise'):
     df = df_input.copy()
-    return df.mean(), df.std(), df.max(), df.min()
-
-
-def df_index_wise_stat(df_input):
-    df = df_input.copy()
-    return df.mean(1), df.std(1),  df.max(1), df.min(1)
-
-
-def create_stat_df(avg_series, std_series, max_series, min_series):
-    df = pd.DataFrame()
-    df['avg'] = avg_series
-    df['std'] = std_series
-    df['max'] = max_series
-    df['min'] = min_series
-    return df
+    df2 = pd.DataFrame()
+    axis_dir = 0 if direct == 'col_wise' else 1
+    df2['avg'] = df.mean(axis_dir)
+    df2['std'] = df.std(axis_dir)
+    df2['max'] = df.max(axis_dir)
+    df2['min'] = df.min(axis_dir)
+    return df2
 
 
 def main(argv=None):
@@ -63,13 +55,11 @@ def main(argv=None):
     df1 = scipy_z_transfer(df1, argv.direct)
     trans = '_col_wiseZ' if argv.direct == 'c' else '_row_wiseZ'
     print(df1.shape)
-    avg_c, std_c, max_c, min_c = df_column_wise_stat(df1)
-    avg_i, std_i, max_i, min_i = df_index_wise_stat(df1)
-    df_c = create_stat_df(avg_c, std_c, max_c, min_c)
-    df_i = create_stat_df(avg_i, std_i, max_i, min_i)
+    df_cwise = df_stat(df1, 'col_wise')
+    df_iwise = df_stat(df1, 'index_wise')
     df1.to_csv('{}{}.csv'.format(df_base, trans))
-    df_c.to_csv('Summary_col_{}{}.csv'.format(df_base, trans))
-    df_i.to_csv('Summary_row_{}{}.csv'.format(df_base, trans))
+    df_cwise.to_csv('Summary_col_{}{}.csv'.format(df_base, trans))
+    df_iwise.to_csv('Summary_row_{}{}.csv'.format(df_base, trans))
 
 if __name__ == '__main__':
     sys.exit(main())
