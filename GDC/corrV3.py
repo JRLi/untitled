@@ -30,6 +30,7 @@ def args_parse():
                         default='s', help='Correlation parser, p: pandas, s: scipy, default is s')
     parser.add_argument('-d', '--direct', choices=['n', 't'],
                         default=['n', 'n'], nargs=2, help="n is normal, t is transpose; default is n n")
+    parser.add_argument("-m", "--mean", action="store_true", help="row-wise mean for the same index")
     parser.add_argument('pairs', nargs=2, help="cell line (1) and drug (2) expression profile")
     args = parser.parse_args()
     return args
@@ -111,11 +112,12 @@ def main(argv=None):
             print('df1.shape: ', df_cells.shape)
             print('df2.shape: ', df_drugs.shape)
 
-            df_cells, df_drugs = df_mean_index(df_cells), df_mean_index(df_drugs)
-            time_3 = datetime.datetime.now()
-            print('after mean data frames:', str(time_3))
-            print('df_cells.shape after mean normalization:', df_cells.shape)
-            print('df_drugs.shape after mean normalization:', df_drugs.shape)
+            if argv.mean:
+                df_cells, df_drugs = df_mean_index(df_cells), df_mean_index(df_drugs)
+                time_3 = datetime.datetime.now()
+                print('after mean data frames:', str(time_3))
+                print('df_cells.shape after mean normalization:', df_cells.shape)
+                print('df_drugs.shape after mean normalization:', df_drugs.shape)
 
             df_cells = df_cells.loc[(df_cells!=0).any(1), (df_cells!=0).any(0)]
             df_drugs = df_drugs.loc[(df_drugs!=0).any(1), (df_drugs!=0).any(0)]
