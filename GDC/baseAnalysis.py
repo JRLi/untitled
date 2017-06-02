@@ -110,7 +110,6 @@ def normalize_ES(es, pos_es, neg_es):
     print('To normalize')
     pavg = pos_es.mean(axis=1)
     navg = neg_es.mean(axis=1).abs()
-    print('pavg:', pavg, sep='\n')
     # pos_npes = pos_es.div(pavg, axis=0)
     # neg_npes = neg_es.div(navg, axis=0)
     for k in range(len(es.index)):
