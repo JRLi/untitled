@@ -39,7 +39,7 @@ def openDF(in_path, direct):
     fpath, fname = os.path.split(in_path)
     fbase, fext = os.path.splitext(fname)
     df = pd.read_csv(in_path, index_col=0) if fext == '.csv' else pd.read_table(in_path, index_col=0)
-    print('Transpose:', direct)
+    print('{}: Transpose: {}'.format(fbase, direct))
     if direct == 't':
         df = df.transpose()
     return df, fbase
@@ -67,26 +67,28 @@ def scipy_corr(s1, s2, corr_mode):
         return st.spearmanr(s1[ixs], s2[ixs])
 
 
-def corr_by_col_of_df(df_c, df_d, top, corr_m):
-    dfc = pd.DataFrame(columns=df_c.columns, index=df_d.columns)
-    dfp = pd.DataFrame(columns=df_c.columns, index=df_d.columns)
+def corr_by_col_of_df(df_cell, df_drug, top, corr_m):
+    dfc = pd.DataFrame(columns=df_drug.columns, index=df_cell.columns)
+    dfp = pd.DataFrame(columns=df_drug.columns, index=df_cell.columns)
     print('target_shape:', dfc.shape)
-    count_c, count_all = 0, 0
-    for i in range(len(df_c.columns)):
-        c1 = df_c.columns[i]
-        s1 = df_c[c1]
-        count_c += 1
-        c_list, p_list = [], []
-        for j in range(len(df_d.columns)):
-            c2 = df_d.columns[j]
+
+    count_drug, count_all = 0, 0
+    for i in range(len(df_drug.columns)):
+        col_drug = df_drug.columns[i]
+        series_drug = df_drug[col_drug] if top in (0, None) else s_top(df_drug[col_drug], top)
+        count_drug += 1
+        corr_list, pvalue_list = [], []
+        for j in range(len(df_cell.columns)):
+            col_cell = df_cell.columns[j]
+            series_cell = df_cell[col_cell]
             count_all += 1
-            s2 = df_d[c2] if top in (0, None) else s_top(df_d[c2], top)
-            cor_e, p_value = scipy_corr(s1, s2, corr_m)
-            c_list.append(cor_e)
-            p_list.append(p_value)
-        dfc[c1] = pd.Series(c_list).values
-        dfp[c1] = np.array(p_list)
-    print('Cells count: {}, Drugs count: {}'.format(count_c, count_all / count_c))
+            cor_e, p_value = scipy_corr(series_cell, series_drug, corr_m)
+            corr_list.append(cor_e)
+            pvalue_list.append(p_value)
+        dfc[col_drug] = pd.Series(corr_list).values
+        dfp[col_drug] = np.array(pvalue_list)
+
+    print('Drugs count: {}, Cells count: {}'.format(count_drug, count_all / count_drug))
     return dfc, dfp
 
 
