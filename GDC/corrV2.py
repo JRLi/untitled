@@ -35,6 +35,13 @@ def args_parse():
     return args
 
 
+def prepare_output_dir(output_dir):
+    if os.path.exists(output_dir):
+        pass
+    else:
+        os.mkdir(output_dir)
+
+
 def openDF(in_path, direct):
     fpath, fname = os.path.split(in_path)
     fbase, fext = os.path.splitext(fname)
@@ -100,16 +107,15 @@ def main(argv=None):
             argv = args_parse()
             df_cells, cells_base = openDF(argv.pairs[0], argv.direct[0])
             df_drugs, drugs_base = openDF(argv.pairs[1], argv.direct[1])
-            time_2 = datetime.datetime.now()
-            print('after read data frames:', str(time_2))
-            print('file1: ' + cells_base, 'file2: ' + drugs_base, sep='\t')
-            print('df1.shape: ', df_cells.shape)
-            print('df2.shape: ', df_drugs.shape)
+            print('file1: ' + cells_base, 'file2: ' + drugs_base, sep='\n')
+            print('df1 rows: {}\tdf1 columns: {}'.format(df_cells.shape[0], df_cells.shape[1]))
+            print('df2 rows: {}\tdf2 columns: {}'.format(df_drugs.shape[0], df_drugs.shape[1]))
+
+            prepare_output_dir('./correlation_output')
+            prepare_output_dir('./p_value_output')
 
             if argv.mean:
                 df_cells, df_drugs = df_mean_index(df_cells), df_mean_index(df_drugs)
-                time_3 = datetime.datetime.now()
-                print('after mean data frames:', str(time_3))
                 print('df_cells.shape after mean normalization:', df_cells.shape)
                 print('df_drugs.shape after mean normalization:', df_drugs.shape)
 
@@ -123,15 +129,14 @@ def main(argv=None):
             df5c, df5p = corr_by_col_of_df(df_cells, df_drugs, argv.top, method)
             top_suffix = 'all' if argv.top in (0, None) else 'top' + str(argv.top)
             print('Use Top:', top_suffix)
-            time_4 = datetime.datetime.now()
-            print('after correlation:', str(time_4))
+            time_2 = datetime.datetime.now()
+            print('after correlation:', str(time_2))
 
-            df5c.to_csv('./Corr_{}_{}_{}_{}.csv'.format(cells_base, drugs_base, method, top_suffix))
-            df5p.to_csv('./P_value_{}_{}_{}_{}.csv'.format(cells_base, drugs_base, method, top_suffix))
-            print('result shape:', df5c.shape)
-            time_5 = datetime.datetime.now()
-            print('Finished time:', str(time_5))
-            print('All used time:', str(time_5 - time_1))
+            df5c.to_csv('./correlation_output/Corr_{}_{}_{}_{}.csv'.format(cells_base, drugs_base, method, top_suffix))
+            df5p.to_csv('./p_value_output/P_value_{}_{}_{}_{}.csv'.format(cells_base, drugs_base, method, top_suffix))
+            time_3 = datetime.datetime.now()
+            print('Finished time:', str(time_3))
+            print('All used time:', str(time_3 - time_1))
         print('Done.\n')
 
     except Usage as err:
