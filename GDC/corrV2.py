@@ -126,9 +126,9 @@ def main(argv=None):
 
             method = {'p': 'pearson', 'k': 'kendall', 's': 'spearman'}.get(argv.corr)
             print('correlation mode:', method)
-            df5c, df5p = corr_by_col_of_df(df_cells, df_drugs, argv.top, method)
             top_suffix = 'all' if argv.top in (0, None) else 'top' + str(argv.top)
             print('Use Top:', top_suffix)
+            df5c, df5p = corr_by_col_of_df(df_cells, df_drugs, argv.top, method)
             time_2 = datetime.datetime.now()
             print('after correlation:', str(time_2))
 
