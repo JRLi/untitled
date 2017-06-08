@@ -15,7 +15,7 @@ batch_size=10
 nb_epoch=100
 
 # if the data format is not standard, must assign the mode parameter to not 1.
-data_train, labels_train, types_train, data_test, labels_test, types_test = get_data(in_path + file, 'Resp', 0.8)
+data_train, labels_train, types_train, data_test, labels_test, types_test = get_data(in_path + file, 'Resp', 0.7)
 print('type(data_train):', type(data_train))
 print(data_train.shape)
 # print('data_train.iloc[1]:',data_train.iloc[2])

@@ -16,9 +16,12 @@ batch_size=10
 nb_epoch=100
 
 # if the data format is not standard, must assign the mode parameter to not 1.
-data_train, labels_train, types_train, data_test, labels_test, types_test = get_data(in_path + file, 'Resp', 0.7)
+data_train, labels_train, types_train, data_test, labels_test, types_test = get_data(in_path + file, 'Resp', 0.67)
 print('type(data_train):', type(data_train))
 print(data_train.shape)
+print(types_train)
+print(types_test)
+print(labels_train)
 # print('data_train.iloc[1]:',data_train.iloc[2])
 
 model = Sequential()
@@ -36,6 +39,9 @@ model.fit(data_train, labels_train, epochs=nb_epoch, batch_size=batch_size)
 train_score = model.predict(data_train)
 predict_types = model.predict_classes(data_train)
 
+print(train_score.shape, predict_types.shape)
+print(train_score[0:3, :])
+print(predict_types[0:3])
 fpr['Training'], tpr['Training'], roc_auc['Training'] = generate_results(labels_train[:, 0], train_score[:, 0])
 correlation, p_value = corr(labels_train.argmax(1).tolist(), predict_types.tolist())
 # if the labels are not binary type, must assign the mode parameter to not 1.
