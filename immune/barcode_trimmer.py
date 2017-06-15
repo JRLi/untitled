@@ -96,7 +96,7 @@ def main(argv=None):
                 barcode = srr2seq_dict.get(srr, '')
                 if barcode != '':
                     reads, process = barcode_trimmer(path, barcode, outfile, index, argv.thresholdL, argv.thresholdR)
-                    print('{}\t{}\t{}\t{}'.format(outfile, reads, process, process/reads))
+                    print('{}\t{}\treads: {}\ttb: {}\trate: {}'.format(outfile, barcode, reads, process, process/reads))
                 else:
                     print(srr + ' has no barcode.')
 
