@@ -84,21 +84,28 @@ def barcode_trimmer(path, barcode, output, section, thresholdL, thresholdR):
     return ReadCount, processed
 
 
+def path_parser(path, index, srr2seq_dict, five_prime_th, three_prime_th):
+    fpath, fname = os.path.split(path)
+    srr, others = fname.split('_', 1)
+    outfile = '_'.join([srr, 'tb', others])
+    barcode = srr2seq_dict.get(srr, '')
+    if barcode != '':
+        reads, process = barcode_trimmer(path, barcode, outfile, index, five_prime_th, three_prime_th)
+        print('{}\t{}\tall:{}\ttb:{}\trate:{:.3f}'.format(outfile, barcode, reads, process, process / reads))
+    else:
+        print(srr + ' has no barcode.')
+
+
 def main(argv=None):
     if argv is None:
         argv = args_parse()
+        print(argv)
         srr2seq_dict = srr2barcode_dict(argv.barcode, argv.srr)
         if argv.paired is not None:
-            for index, path in enumerate(argv.paired):
-                fpath, fname = os.path.split(path)
-                srr, others = fname.split('_', 1)
-                outfile = '_'.join([srr, 'tb', others])
-                barcode = srr2seq_dict.get(srr, '')
-                if barcode != '':
-                    reads, process = barcode_trimmer(path, barcode, outfile, index, argv.thresholdL, argv.thresholdR)
-                    print('{}\t{}\treads: {}\ttb: {}\trate: {}'.format(outfile, barcode, reads, process, process/reads))
-                else:
-                    print(srr + ' has no barcode.')
+            for index, file_path in enumerate(argv.paired):
+                path_parser(file_path, index, srr2seq_dict, argv.thresholdL, argv.thresholdR)
+        if argv.single is not None:
+            path_parser(argv.single, 0, srr2seq_dict, argv.thresholdL, argv.thresholdR)
 
 if __name__ == "__main__":
     sys.exit(main())
