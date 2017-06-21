@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.5
+#!/usr/bin/env python3.6
 """
 Created by JRLi on 2016/12/03 for python learning
 """

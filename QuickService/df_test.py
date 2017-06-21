@@ -98,17 +98,206 @@ for i in range(0,len(df2.columns)):
     df2.iloc[:,i][df2.iloc[:,i]<= qv ] = qv
     print(df2.iloc[:,i])
 
-df3 = pd.read_table('D://Project/circ_bicluster/CircRNABloodExp.csv', sep=',', index_col=0)
-df3 = df3.iloc[0:8, 0:8]
-listA = [1,3,4,6]
-listB = [1,2,3]
-np_array1 = np.array(listA) - 1
-np_array2 = np.array(listB) - 1
-print(np_array1)
-print(df3.iloc[np_array1,np_array2])    # or df3.iloc[[1,3,4],[0,1,2]]
-print(str(len(np_array1))+'x'+str(len(np_array2)))
+# df3 = pd.read_table('D://Project/circ_bicluster/CircRNABloodExp.csv', sep=',', index_col=0)
+# df3 = df3.iloc[0:8, 0:8]
+# listA = [1,3,4,6]
+# listB = [1,2,3]
+# np_array1 = np.array(listA) - 1
+# np_array2 = np.array(listB) - 1
+# print(np_array1)
+# print(df3.iloc[np_array1,np_array2])    # or df3.iloc[[1,3,4],[0,1,2]]
+# print(str(len(np_array1))+'x'+str(len(np_array2)))
+'''
+df4 = pd.read_table('D://Project/PBMC/forTest9x7.txt', index_col=0)
+med4 = df4.median(axis = 1)
+print(df4)
+print('med:')
+print(med4)
+print(type(med4))
+df5 = df4.sub(df4.median(axis = 1), axis = 0)
+print(df5)
+avg = df5.mean(axis=0)
+std = df5.std()
+print(avg)
+print(std)
+print((df5.iloc[:,1]-avg[1])/std[1])
+df6 = df5.copy()
+for k in range(len(df6.columns)):
+    df6.iloc[:, k] = (df6.iloc[:, k] - avg[k]) / std[k]
+print(df6)
 
-# print(qv)
+import scipy.stats as st
+print(st.norm.sf(1.0))
+df7 = df6.copy()
+df8 = df6.copy()
+for k in range(len(df7.columns)):
+    df7.iloc[:, k][df7.iloc[:, k] < 0] = 0
+    df7.iloc[:, k] = -np.log10(st.norm.cdf(-df7.iloc[:, k])*2)
+    df7.iloc[:, k][df7.iloc[:, k] > 10] = 10
+df7 = df7.add_suffix('_up')
+
+for k in range(len(df8.columns)):
+    df8.iloc[:, k][df8.iloc[:, k] > 0] = 0
+    df8.iloc[:, k] = -np.log10(st.norm.cdf(df8.iloc[:, k])*2)
+    df8.iloc[:, k][df8.iloc[:, k] > 10] = 10
+df8 = df8.add_suffix('_dn')
+print(df7)
+print(df8)
+
+df9 = pd.concat([df7, df8], axis=1)
+print(df9, df9.shape, sep='\n')
+minv = df9.values.min()
+maxv = df9.values.max()
+print(minv, maxv)
+df10 = (df9 - minv)/(maxv - minv)
+df10.columns = df10.columns.str.replace('\s+', '')
+print(df10)
+
+print(st.norm.cdf(-1))
+print(st.norm.cdf(1))
+print(st.norm.cdf(0))
+
+df9 = pd.read_table('D://Project/drs/forTest9x7.txt', index_col= 0)
+df12 = pd.read_table('D://Project/drs/forTest12x4.txt', index_col= 0)
+df7 = pd.read_table('D://Project/drs/forTest7x8.txt', index_col= 0)
+print(df9)
+print(df12)
+print(df7)
+print('aaaaa')
+print(df12.corrwith(df9.iloc[:,1], axis=0))
+print(df7.corrwith(df9.iloc[:,0]))
+'''
+def df_mean_index(df_input):
+    gp = df_input.groupby(df_input.index)
+    return gp.mean()
+
+
+def s_top(series_input, top_n):
+    ss = series_input.copy()
+    ss.sort_values(inplace=True)
+    ss = ss.iloc[range(-top_n, top_n)]
+    return ss
+
+
+df9 = pd.read_table('D://Project/drs/forTest9x7.txt', index_col= 0)
+df8 = pd.read_table('D://Project/drs/forTest8x8.txt', index_col= 0)     # drug
+df8 = df_mean_index(df8)
+s2 = s_top(df8['D1'], 3)
+print(s2)
+print(df8['D1'])
+print(len(s2.index))
+
+import os
+
+text1 = 'D://Project/drs/forTest9x7.txt'
+fpath, fname = os.path.split(text1)
+fbase, fext = os.path.splitext(fname)
+print(fext)
+print(fbase)
+print(fname)
+print(fpath)
+s1 = df9.iloc[:,0]
+s2 = df8.iloc[:,0]
+print(s1)
+print(s2)
+ixs = s1.index.intersection(s2.index)
+print(s1[ixs])
+print(s2[ixs])
+import statsmodels.api as sm
+import scipy.stats as st
+ftols = pd.ols(y=s1, x=s2, intercept=True)
+ftols2 = pd.ols(y=s1[ixs], x=s2[ixs], intercept=True)
+mode = sm.OLS(s1[ixs], s2[ixs])
+results = mode.fit()
+print(ftols.f_stat['p-value'])
+print(ftols2.f_stat['p-value'])
+print(results.f_pvalue)
+print(st.pearsonr(s1[ixs], s2[ixs]))
+print(st.spearmanr(s1[ixs], s2[ixs]))
+print(type(st.spearmanr(s1[ixs], s2[ixs])))
+print(st.spearmanr(s1[ixs], s2[ixs])[1])
+print(s1.corr(s2, 'spearman'))
+print(st.kendalltau(s1[ixs], s2[ixs])[1])
+a, b = st.spearmanr(s1[ixs], s2[ixs])
+print(a, b)
+uxs = s1.index.union(s2.index)
+print(s1[uxs])
+print(s2[uxs])
+
+import scipy.stats.mstats as mt
+import time
+import datetime
+def z_transfer(df_input):
+    df = df_input.copy()
+    # mean and std track column from row index 0 to end, so axis use default (index 0).
+    avg = df.mean()
+    std = df.std()
+    for k in range(len(df.columns)):
+        df.iloc[:, k] = (df.iloc[:, k] - avg[k]) / std[k]
+    return df
+a_time = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+c_time = time.time()
+e_time = datetime.datetime.now()
+print(a_time)
+print(c_time)
+print(str(e_time))
+
+def scipy_z(df_input):
+    df = df_input.copy()
+    for k in range(len(df.columns)):
+        df.iloc[:, k] = mt.zscore(df.iloc[:, k], ddof=1)
+    return df
+# print(mt.zscore(s1))
+print(-z_transfer(df9))
+print(scipy_z(df9))
+b_time = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+d_time = time.time()
+f_time = datetime.datetime.now()
+print(b_time)
+print(d_time)
+print(str(f_time))
+print(d_time - c_time)
+print(str(f_time - e_time))
+
+
+def openDF(in_path):
+    fpath, fname = os.path.split(in_path)
+    fbase, fext = os.path.splitext(fname)
+    df = pd.read_csv(in_path, index_col=0) if fext == '.csv' else pd.read_table(in_path, index_col=0)
+    return df, fbase
+
+df2 = pd.DataFrame()
+print(df2)
+df2['fileA'] = pd.Series({'a':1,'b':2,'c':3})
+print(df2)
+
+df2['fileB'] = pd.Series({'b':2,'c':3,'a':3,'d':4})
+print(df2)
+df2 = df2.assign(fileC=pd.Series({'b':2,'c':3,'a':3,'d':4}))
+print(df2)
+print(df2.columns)
+df2 = df2.transpose()
+print(df2)
+print(df2.columns)
+print(df2.index)
+
+df3, test = openDF('D://Project/drs/gdsc/wes_test.txt')
+print(df3)
+df3 = df3.loc[(df3!=0).any(1), (df3!=0).any(0)]
+print(df3)
+'''
+df1, aaa = openDF('D://Project/drs/gdsc/gdsc_r10c10.csv')
+df2, bbb = openDF('D://Project/drs/gdsc/c_r_rzs_r10c10.csv')
+del df1.index.name
+del df2.index.name
+print(aaa, df1, sep='\n')
+print(bbb, df2, sep='\n')
+print(df1.index.name)
+'''
+
+
+#df2.to_csv('D://Project/drs/gdsc/cmap/cd50b.csv')
+# # print(qv)
 # filePath = 'E:/StringTemp/GDS/'
 # df1 = pd.read_table(filePath + 'GDS3876.matrix', index_col=0)
 # print(df1.shape)

@@ -187,7 +187,6 @@ def main(argv=None):
             root = '.reverse_complement' if argv.reverse else ''
             if argv.command == 'fa':
                 print('Implement fasta mode.')
-                print(argv)
                 with open('./SummaryOfFasta.txt', 'w') as rs:
                     for fileName in argv.input:
                         fpath, fname = os.path.split(fileName)
@@ -199,7 +198,6 @@ def main(argv=None):
                                  'Total_bases: {}\nGC_content: {}\n\n'.format(fname, tc, mxc, mic, n50, n90, tb, gcc))
             elif argv.command == 'fq':
                 print('Implement fastq mode.')
-                print(argv)
                 if argv.paired is None and argv.single is None:
                     raise Usage('Error! No input file, please use:./fastaqcr [-r] fq [-p PAIRED PAIRED] [-s [SINGLE]]')
                 with open('./SummaryOfReads.txt', 'w') as results:

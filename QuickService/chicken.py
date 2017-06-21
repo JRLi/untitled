@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.5
+#!/usr/bin/env python
 """
 Created by JRLi on 2017/01/08 for chicken contigs
 """

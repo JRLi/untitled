@@ -121,8 +121,8 @@ def main():
     print(types_train)
     # print('data_train.iloc[1]:',data_train.iloc[2])
 
+    np.random.seed(1)
     model = Sequential()
-
     model.add(Dense(units=output_dim1, input_dim=len(data_train[0]), activation="relu"))
     model.add(Dropout(0.2))
     model.add(Dense(units=output_dim2, activation="relu"))
@@ -131,8 +131,8 @@ def main():
     model.add(Dense(1, activation="sigmoid"))
     model.compile(loss="mse", optimizer="rmsprop")
     print(model.summary())
-    model.fit(data_train, labels_train, epochs=nb_epoch, batch_size=batch_size, verbose=1, validation_split=0.1)
 
+    model.fit(data_train, labels_train, epochs=nb_epoch, batch_size=batch_size, verbose=1, validation_split=0.1)
     train_score = model.predict(data_train)
     predict_types = model.predict_classes(data_train)
 

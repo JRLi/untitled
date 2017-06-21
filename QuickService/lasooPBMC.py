@@ -1,10 +1,7 @@
-import numpy as np
 import pandas as pd
 from sklearn import datasets, linear_model
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
-from sklearn import svm
 import os
 
 file_path = 'D:/Project/PBMC/logistic_in/'
