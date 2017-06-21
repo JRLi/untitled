@@ -45,6 +45,11 @@ def lincs_dict(path):
     return id2anno
 
 
+def rreplace(s, old, new, occurrence):
+    li = s.rsplit(old, occurrence)
+    return new.join(li)
+
+
 def main(argv=None):
     if argv is None:
         argv = args_parse()
@@ -61,7 +66,8 @@ def main(argv=None):
                 df_p, p_base = openDF(path_p)
                 df_c, c_base = openDF(path_c)
                 ii = locate(df_p, argv.mode, argv.threshold) if argv.mode == 'p' else locate(df_c, argv.mode, argv.threshold)
-                title = p_base.replace('P_value_Corr_', '')
+                title = p_base.replace('P_value_Corr_rna_seq_commonID_sampleID_FPKM_m_col_wiseZ_row_wiseZ_', '')
+                title = rreplace(title, '_pearson_all', '', 1)
                 if len(ii[1]) > 0:
                     for r, c in zip(ii[0], ii[1]):
                         snv = df_p.columns[c].replace(':', '\t')
