@@ -40,7 +40,7 @@ def lincs_dict(path):
                 continue
             lf = line.rstrip().split('\t')
             drug_annotation = '\t'.join([lf[1], lf[7], lf[6], lf[4], lf[9]]) if not lf[8].startswith('ctl_') \
-                else '\t'.join([lf[1], 'ctl', 'ctl', 'ctl', 'ctl'])
+                else '\t'.join([lf[1], '-', '-', '-', '-'])
             id2anno[lf[0]] = drug_annotation
     return id2anno
 
@@ -52,25 +52,24 @@ def main(argv=None):
         id2drug = lincs_dict('GSE70138_20151231_annotation.txt')
         list_p = os.listdir('pvalue')
         time_1 = datetime.datetime.now()
-        #with open('result_{}_{}'.format(argv.mode, argv.threshold), 'a') as outFile:
-        for fileName_p in list_p:
-            fileName_c = fileName_p.replace('P_value', 'Corr', 1)
-            path_p = os.path.join('pvalue', fileName_p)
-            path_c = os.path.join('correlation', fileName_c)
-            df_p, p_base = openDF(path_p)
-            df_c, c_base = openDF(path_c)
-            print('process: {}'.format(p_base))
-            ii = locate(df_p, argv.mode, argv.threshold) if argv.mode == 'p' else locate(df_c, argv.mode, argv.threshold)
-            title = p_base.replace('P_value_Corr_', '')
-            if len(ii[1]) > 0:
-                with open('result_{}_{}'.format(argv.mode, argv.threshold), 'a') as outFile:
+        with open('result_{}_{}'.format(argv.mode, argv.threshold), 'a') as outFile:
+            outFile.write('file\tlincsID\tcellLine\tdrug\tdrugID\tum\th\tsnvGene\tgeneID\tchr\tlocus\tcorrelation\tp_value\n')
+            for fileName_p in list_p:
+                fileName_c = fileName_p.replace('P_value', 'Corr', 1)
+                path_p = os.path.join('pvalue', fileName_p)
+                path_c = os.path.join('correlation', fileName_c)
+                df_p, p_base = openDF(path_p)
+                df_c, c_base = openDF(path_c)
+                ii = locate(df_p, argv.mode, argv.threshold) if argv.mode == 'p' else locate(df_c, argv.mode, argv.threshold)
+                title = p_base.replace('P_value_Corr_', '')
+                if len(ii[1]) > 0:
                     for r, c in zip(ii[0], ii[1]):
                         snv = df_p.columns[c].replace(':', '\t')
                         drug = id2drug.get(df_p.index[r])
                         outFile.write('{}\t{}\t{}\t{}\t{}\t{}\n'.format(
                             title, df_p.index[r], drug, snv, df_c.iloc[r, c], df_p.iloc[r, c]))
-            else:
-                print('{} has no value match the threshold: {}: {}'.format(title, argv.mode, argv.threshold))
+                else:
+                    print('{} has no value match the threshold: {}: {}'.format(title, argv.mode, argv.threshold))
         time_2 = datetime.datetime.now()
         print('\t[info] All used time:', str(time_2 - time_1))
 
