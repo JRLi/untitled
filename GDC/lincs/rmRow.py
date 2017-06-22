@@ -3,6 +3,7 @@ import pandas as pd
 import os
 
 fileCheck = 'Corr_rna'
+stringCheck = 'ctl_'
 
 
 def openDF(in_path, direct='f'):
@@ -20,9 +21,9 @@ def main():
         if lincs.startswith(fileCheck):
             df1, df1_base = openDF(lincs)
             print(df1_base, df1.shape)
-            rows = [r for r in df1.index if 'ctl_' not in r]
+            rows = [r for r in df1.index if stringCheck not in r]
             df1 = df1.ix[rows]
-            print('after remove ctl:', df1.shape)
+            print('after remove target:', df1.shape)
             df1.to_csv(df1_base + '.csv')
 
 if __name__ == '__main__':

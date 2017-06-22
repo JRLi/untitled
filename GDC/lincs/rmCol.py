@@ -3,6 +3,7 @@ import pandas as pd
 import os
 
 fileCheck = 'GSE70138'
+stringCheck = 'ctl_'
 
 
 def openDF(in_path, direct='f'):
@@ -20,9 +21,9 @@ def main():
         if lincs.startswith(fileCheck):
             df1, df1_base = openDF(lincs)
             print(df1_base, df1.shape)
-            cols = [c for c in df1.columns if 'ctl_' not in c]
+            cols = [c for c in df1.columns if stringCheck not in c]
             df1 = df1[cols]
-            print('after remove ctl:', df1.shape)
+            print('after remove target:', df1.shape)
             df1.to_csv(df1_base + '.csv')
 
 if __name__ == '__main__':
