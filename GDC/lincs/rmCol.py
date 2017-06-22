@@ -2,8 +2,8 @@
 import pandas as pd
 import os
 
-fileCheck = 'GSE70138'
-stringCheck = 'ctl_'
+fileCheck = 'snv_indel'
+stringCheck = 'HASH'
 
 
 def openDF(in_path, direct='f'):
