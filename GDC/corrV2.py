@@ -123,6 +123,8 @@ def main(argv=None):
             df_drugs = df_drugs.loc[(df_drugs!=0).any(1), (df_drugs!=0).any(0)]
             print('df_cells.shape after remove all zero rows and columns:', df_cells.shape)
             print('df_drugs.shape after remove all zero rows and columns:', df_drugs.shape)
+            ixs = df_cells.index.intersection(df_drugs.index)
+            print('The numbers of intersection index:', len(ixs))
 
             method = {'p': 'pearson', 'k': 'kendall', 's': 'spearman'}.get(argv.corr)
             print('correlation mode:', method)
