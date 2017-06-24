@@ -26,7 +26,7 @@ def srr2barcode_dict(barcode_annotation, SRR_annotation):
     with open(barcode_annotation) as barcodeFile, open(SRR_annotation) as srrFile:
         bc2seq_dict = dict(line.strip().split('\t', 1) for line in barcodeFile)
         for line in srrFile:
-            lf = line.strip().split('\t', 1)
+            lf = line.strip().split('\t')
             bc = lf[1].split('.')[1] if lf[1].startswith('TCR') else ''
             srr2seq_dict[lf[0]] = bc2seq_dict.get(bc, '')
     return srr2seq_dict
@@ -87,8 +87,10 @@ def barcode_trimmer(path, barcode, output, section, thresholdL, thresholdR):
 def path_parser(path, index, srr2seq_dict, five_prime_th, three_prime_th):
     fpath, fname = os.path.split(path)
     srr, others = fname.split('_', 1)
+    print(srr)
     outfile = '_'.join([srr, 'tb', others])
     barcode = srr2seq_dict.get(srr, '')
+    print(barcode)
     if barcode != '':
         reads, process = barcode_trimmer(path, barcode, outfile, index, five_prime_th, three_prime_th)
         print('{}\t{}\tall:{}\ttb:{}\trate:{:.3f}'.format(outfile, barcode, reads, process, process / reads))
@@ -101,6 +103,7 @@ def main(argv=None):
         argv = args_parse()
         print(argv)
         srr2seq_dict = srr2barcode_dict(argv.barcode, argv.srr)
+        print(srr2seq_dict)
         if argv.paired is not None:
             for index, file_path in enumerate(argv.paired):
                 path_parser(file_path, index, srr2seq_dict, argv.thresholdL, argv.thresholdR)
