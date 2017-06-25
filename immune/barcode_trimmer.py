@@ -103,7 +103,7 @@ def main(argv=None):
         argv = args_parse()
         print(argv)
         srr2seq_dict = srr2barcode_dict(argv.barcode, argv.srr)
-        print(srr2seq_dict)
+        print(len(srr2seq_dict))
         if argv.paired is not None:
             for index, file_path in enumerate(argv.paired):
                 path_parser(file_path, index, srr2seq_dict, argv.thresholdL, argv.thresholdR)
