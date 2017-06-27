@@ -1,13 +1,12 @@
 # -*- coding = UTF-8 -*-
 import os
-
 overlapPath = "D:/Project/orchid/orchid_sim90_len500_FDR01_report/vannOverlap/"
 faPath = "D:/Project/orchid/orchid_sim90_len500_FDR01_report/"
 dirFiles = os.listdir(overlapPath)
 print(dirFiles)
 
 orchidID2SeqDict = {}
-orchidID = ""
+sequence, orchidID = "", ""
 IDCount = 0
 with open(faPath + "orchid_scaffolds_no_extension_90_500.fa") as inputFileOrchid:
     for line in inputFileOrchid:

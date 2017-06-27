@@ -78,7 +78,7 @@ print(y_train_label[:5])
 y_train_OneHot = np_utils.to_categorical(y_train_label)
 y_test_OneHot = np_utils.to_categorical(y_test_label)
 print(y_train_OneHot[:5])
-
+print(y_train_OneHot.shape[1])
 model = Sequential()
 model.add(Dense(units=256, input_dim=len(X_train_normalize[0]), kernel_initializer='normal', activation="relu"))    # hidden layer 256
 model.add(Dense(units=len(set(y_train_label)), kernel_initializer='normal', activation='softmax'))
