@@ -35,8 +35,8 @@ def preprocess_data(raw_df):
     df['DAS0'] = df['DAS0'].fillna(all_mean.DAS0)
     df['Stag'] = df['Stag'].fillna(all_mean.Stag)
     df['drugTime'] = df['drugTime'].fillna(all_mean['drugTime'])
-    # df['Resp'] = df['Resp'].map({2.0: 1.0, 1.0: 1.0, 0.0: 0.0})
-    df['Resp'] = df['Resp'].replace(2.0, 1.0)
+    df['Resp'] = df['Resp'].map({2.0: 1.0, 1.0: 0.0, 0.0: 0.0})
+    #df['Resp'] = df['Resp'].replace(2.0, 1.0)
     cols_list = df.columns.tolist()  # must need tolist()
     cols_list = cols_list[-1:] + cols_list[:-1]
     df = df[cols_list]
@@ -72,7 +72,7 @@ def mlp(X, y):
     model.add(Dense(units=1, kernel_initializer='uniform', activation='sigmoid'))
     print(model.summary())
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-    train_history = model.fit(x=X, y=y, validation_split=0.1, epochs=30, batch_size=30, verbose=2)
+    train_history = model.fit(x=X, y=y, validation_split=0.3, epochs=30, batch_size=10, verbose=2)
     return train_history, model
 
 
@@ -105,6 +105,14 @@ def main():
     scores = model.evaluate(x=test_features, y=test_label)
     print('accuracy:', scores[1])
     model.save_weights(out_path + 'mlp_ra.h5')
+
+    all_features, all_label = preprocess_data(all_df)
+    all_probability = model.predict(all_features)
+    all_class_p = model.predict_classes(all_features)
+    #print(all_probability[all_probability < 0.5])
+    print(all_probability[:10])
+    print(all_label[:10])
+    print(all_class_p[:10])
 
 if __name__ == '__main__':
     main()
