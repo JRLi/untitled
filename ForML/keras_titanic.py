@@ -15,7 +15,8 @@ filepath = 'E://StringTemp/titanic3.xls'
 
 def preprocess_data(raw_df):
     # 1. remove name
-    df = raw_df.drop(['name'], axis=1)  # drop name, drop can input string or list, axis = 1 indicate row-wise
+    #df = raw_df.copy()
+    df =raw_df.drop(['name'], axis=1)  # drop name, drop can input string or list, axis = 1 indicate row-wise
     # 2. find nan columns
     print(df.isnull().sum())  # age, fare, embarked have nan
     # 3. get mean and fill nan with mean
@@ -87,6 +88,24 @@ def main():
     scores = model.evaluate(x=test_features, y=test_label)
     print('accuracy:', scores[1])
     model.save_weights('E://StringTemp/mlp_titanic.h5')
+
+    # build new df with jack and rose
+    Jack = pd.Series([0, 'Jack', 3, 'male', 23, 1, 0, 5.000, 'S'])
+    Rose = pd.Series([1, 'Rose', 1, 'female', 20, 1, 0, 100.0000, 'S'])
+    JR_df = pd.DataFrame([list(Jack), list(Rose)], columns=all_df.columns)
+    all_df = pd.concat([all_df, JR_df])
+    print(all_df[-2:])
+
+    all_features, all_labels = preprocess_data(all_df)
+    all_probability = model.predict(all_features)
+    print(all_probability[:10])
+
+    # integrate all_df and all_probability
+    all_df_withP = all_df.copy()
+    all_df_withP.insert(len(all_df.columns), 'probability', all_probability)
+    print(all_df_withP[-2:])
+    df_p90n1 = all_df_withP[(all_df_withP['survived'] == 0) & (all_df_withP['probability'] > 0.9)]
+    print(df_p90n1)
 
 if __name__ == '__main__':
     main()
