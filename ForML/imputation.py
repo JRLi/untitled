@@ -3,14 +3,6 @@ import pandas as pd
 import os
 from imputer import Imputer
 impute = Imputer()
-import Orange
-
-from sklearn.datasets import load_boston
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import Imputer
-from sklearn.model_selection import cross_val_score
-
 
 def openDF(in_path, direct = 'f'):
     fpath, fname = os.path.split(in_path)

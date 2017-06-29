@@ -68,7 +68,7 @@ def main():
         print('downloaded:', result)
     # get useful information
     all_df = pd.read_excel(filepath)    # read data frame from excel
-    cols = all_df.columns[[1, 2, 0, 3, 4, 5, 6, 8, 10]] # get useful columns
+    cols = all_df.columns[[1, 2, 0, 3, 4, 5, 6, 8, 10]]     # get useful columns
     print(cols)
     all_df = all_df[cols]
     # get random training and testing
