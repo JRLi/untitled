@@ -4,6 +4,9 @@ import numpy as np
 import argparse
 import os, sys, datetime
 
+dir_c = 'correlation_output'
+dir_p = 'p_value_output'
+
 
 def args_parse():
     parser = argparse.ArgumentParser(description='need correlation and pvalue dirs')
@@ -55,14 +58,14 @@ def main(argv=None):
         argv = args_parse()
         print(argv)
         id2drug = lincs_dict('GSE70138_20151231_annotation.txt')
-        list_p = os.listdir('pvalue')
+        list_p = os.listdir(dir_p)
         time_1 = datetime.datetime.now()
-        with open('result_{}_{}'.format(argv.mode, argv.threshold), 'a') as outFile:
+        with open('result_{}_{}.txt'.format(argv.mode, argv.threshold), 'a') as outFile:
             outFile.write('file\tlincsID\tcellLine\tdrug\tdrugID\tum\th\tsnvGene\tgeneID\tchr\tlocus\tcorrelation\tp_value\n')
             for fileName_p in list_p:
                 fileName_c = fileName_p.replace('P_value', 'Corr', 1)
-                path_p = os.path.join('pvalue', fileName_p)
-                path_c = os.path.join('correlation', fileName_c)
+                path_p = os.path.join(dir_p, fileName_p)
+                path_c = os.path.join(dir_c, fileName_c)
                 df_p, p_base = openDF(path_p)
                 df_c, c_base = openDF(path_c)
                 ii = locate(df_p, argv.mode, argv.threshold) if argv.mode == 'p' else locate(df_c, argv.mode, argv.threshold)
