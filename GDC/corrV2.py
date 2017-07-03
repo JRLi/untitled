@@ -6,7 +6,6 @@ import pandas as pd
 import argparse
 import datetime
 import scipy.stats as st
-import threading
 
 use_message = '''
     Need Python3 and numpy, pandas, scipy; or Anaconda.
