@@ -52,7 +52,7 @@ def scipy_ttest_ind(s1, s2):
 
 def t_by_index_of_df(df_snv, df_drug_corr, min_s):
     dfp = pd.DataFrame(index=df_drug_corr.index)
-    count_snv, count_all_snv, count_drug = 0, 0, 0
+    count_snv, count_all_snv, count_drug, count_skip = 0, 0, 0, 0
     ii1_len_list = []
     for i in range(len(df_snv.index)):
         count_all_snv += 1
@@ -62,6 +62,7 @@ def t_by_index_of_df(df_snv, df_drug_corr, min_s):
         p_value_list = []
         if (len(ii1[0]) < min_s) or (len(ii0[0]) < min_s):
             print('\t[Skip]:', df_snv.index[i], len(ii1[0]), len(ii0[0]))
+            count_skip += 1
             continue
         for j in range(len(df_drug_corr.index)):
             count_drug += 1
@@ -71,7 +72,8 @@ def t_by_index_of_df(df_snv, df_drug_corr, min_s):
             p_value_list.append(t_result[1])
         count_snv += 1
         dfp[df_snv.index[i]] = np.array(p_value_list)
-    print('[All_snv]: {}, [processed_snv]: {}, [drugs]: {}'.format(count_all_snv, count_snv, count_drug / count_snv))
+    print('All_snv: {}, processed_snv: {}, skipped: {}, drugs: {}'.
+          format(count_all_snv, count_snv, count_skip, count_drug / count_snv))
     return dfp, ii1_len_list
 
 
