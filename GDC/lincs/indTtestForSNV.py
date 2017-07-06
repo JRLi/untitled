@@ -75,10 +75,13 @@ def main(argv=None):
     try:
         if argv is None:
             argv = args_parse()
-            print('[Start]:\nsnv_file: {}\nmin_group: {}\nfile list: {}'.format(argv.snv, argv.min, argv.corr))
+        print('[Start]:{}\nsnv_file: {}\nmin: {}\ncorr_list: {}'.format(str(time_0), argv.snv, argv.min, argv.corr))
+        time_0 = datetime.datetime.now()
         prepare_output_dir('./p_value_df')
+
         df_snv, snv_base = openDF(argv.snv)
         print('{}: {}'.format(snv_base, df_snv.shape))
+
         with open('./Summary_snv_{}_{}'.format(snv_base, argv.min), 'w') as status:
             status.write('corr_file\tintersection\t{}\n'.format('\t'.join(df_snv.index)))
             for corr_file in argv.corr:
@@ -88,7 +91,7 @@ def main(argv=None):
                       format(dc_base, df_drug_corr.shape, df_drug_corr.shape[0], df_snv.shape[0]))
 
                 ixc = df_snv.columns.intersection(df_drug_corr.columns)
-                print('[intersection samples]:', len(ixc))
+                print('intersection samples:', len(ixc))
                 df_corr = df_drug_corr[ixc]
                 df_snv = df_snv[ixc]
 
@@ -97,8 +100,10 @@ def main(argv=None):
                 df_p.to_csv('p_value_df/ttest_{}_{}_{}.csv'.format(snv_base, dc_base, argv.min))
                 status.write('{}\t{}\t{}\n'.format(dc_base, len(ixc), '\t'.join(snv1_list)))
                 time_3 = datetime.datetime.now()
-                print('\t[Finished time]: {}\t[All used time]: {}'.format(str(time_3), str(time_3 - time_1)))
-            print('Done.\n')
+                print('\t[Finished time]: {}\t[Used time]: {}'.format(str(time_3), str(time_3 - time_1)))
+
+            time_4 = datetime.datetime.now()
+            print('\t[All finish time]: {}\t[All use time]: {}\nDone.\n'.format(str(time_4), str(time_4 - time_0)))
 
     except Usage as err:
         print(sys.stderr, err.msg)
