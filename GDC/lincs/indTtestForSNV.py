@@ -47,7 +47,7 @@ def scipy_ttest_ind(s1, s2):
     return st.ttest_ind(s1, s2)
 
 
-def t_by_index_of_df(df_snv, df_drug_corr, min):
+def t_by_index_of_df(df_snv, df_drug_corr, min_s):
     dfp = pd.DataFrame(index=df_drug_corr.index)
     count_snv, count_all_snv, count_drug = 0, 0, 0
     ii1_len_list = []
@@ -57,7 +57,7 @@ def t_by_index_of_df(df_snv, df_drug_corr, min):
         ii0 = np.where(df_snv.iloc[i, :] != 1)
         ii1_len_list.append(str(len(ii1[0])))
         p_value_list = []
-        if (len(ii1[0]) < min) or (len(ii0[0]) < min):
+        if (len(ii1[0]) < min_s) or (len(ii0[0]) < min_s):
             print('\t[Skip]:', df_snv.index[i], len(ii1[0]), len(ii0[0]))
             continue
         for j in range(len(df_drug_corr.index)):
