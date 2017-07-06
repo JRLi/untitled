@@ -2,7 +2,10 @@
 import pandas as pd
 import numpy as np
 import scipy.stats as st
-import sys, os, datetime, argparse
+import sys
+import os
+import datetime
+import argparse
 use_message = '''
     Need Python3 and numpy, pandas, scipy; or Anaconda.
     Usage: python -u indTtestSNV.py [-d d, -m m] -s df_snv -c [df_correlation1 ....]
@@ -33,7 +36,7 @@ def prepare_output_dir(output_dir):
         os.mkdir(output_dir)
 
 
-def openDF(in_path, direct='n'):
+def open_df(in_path, direct='n'):
     fpath, fname = os.path.split(in_path)
     fbase, fext = os.path.splitext(fname)
     df = pd.read_csv(in_path, index_col=0) if fext == '.csv' else pd.read_table(in_path, index_col=0)
@@ -80,14 +83,14 @@ def main(argv=None):
         print('[Start]:{}\nsnv_file: {}\nmin: {}\ncorr_list: {}'.format(str(time_0), argv.snv, argv.min, argv.corr))
         prepare_output_dir('./p_value_df')
 
-        df_snv, snv_base = openDF(argv.snv)
+        df_snv, snv_base = open_df(argv.snv)
         print('{}: {}'.format(snv_base, df_snv.shape))
 
         with open('./Summary_snv_{}_{}'.format(snv_base, argv.min), 'w') as status:
             status.write('corr_file\tintersection\t{}\n'.format('\t'.join(df_snv.index)))
             for corr_file in argv.corr:
                 time_1 = datetime.datetime.now()
-                df_drug_corr, dc_base = openDF(corr_file, argv.direct)
+                df_drug_corr, dc_base = open_df(corr_file, argv.direct)
                 print('{}: {}\nExpect target shape: ({}, {})'.
                       format(dc_base, df_drug_corr.shape, df_drug_corr.shape[0], df_snv.shape[0]))
 
