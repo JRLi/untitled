@@ -75,10 +75,11 @@ def main(argv=None):
     try:
         if argv is None:
             argv = args_parse()
+            print('[Start]:\nsnv_file: {}\nmin_group: {}\nfile list: {}'.format(argv.snv, argv.min, argv.corr))
         prepare_output_dir('./p_value_df')
         df_snv, snv_base = openDF(argv.snv)
         print('{}: {}'.format(snv_base, df_snv.shape))
-        with open('./Summary_snv_{}'.format(snv_base), 'w') as status:
+        with open('./Summary_snv_{}_{}'.format(snv_base, argv.min), 'w') as status:
             status.write('corr_file\tintersection\t{}\n'.format('\t'.join(df_snv.index)))
             for corr_file in argv.corr:
                 time_1 = datetime.datetime.now()
@@ -93,7 +94,7 @@ def main(argv=None):
 
                 df_p, snv1_list = t_by_index_of_df(df_snv, df_corr, argv.min)
                 print('Actual result shape:', df_p.shape)
-                df_p.to_csv('p_value_df/ttest_{}_{}.csv'.format(snv_base, dc_base))
+                df_p.to_csv('p_value_df/ttest_{}_{}_{}.csv'.format(snv_base, dc_base, argv.min))
                 status.write('{}\t{}\t{}\n'.format(dc_base, len(ixc), '\t'.join(snv1_list)))
                 time_3 = datetime.datetime.now()
                 print('\t[Finished time]: {}\t[All used time]: {}'.format(str(time_3), str(time_3 - time_1)))
