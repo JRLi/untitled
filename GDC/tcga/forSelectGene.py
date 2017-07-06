@@ -4,7 +4,7 @@ import sys
 
 delimiter = ','
 outpath = '.'
-in_path = '../snv_gene_2'
+in_path = '../contain3'
 
 
 def getGeneList(path):
