@@ -29,6 +29,7 @@ def args_parse():
     parser.add_argument('-d', '--direct', choices=['n', 't'],
                         default=['n', 'n'], nargs=2, help="n is normal, t is transpose; default is n n")
     parser.add_argument("-m", "--mean", action="store_true", help="row-wise mean for the same index")
+    parser.add_argument('-rm', '--rmZeroColRow', action='store_true', help='remove all zero rows/cols(after transpose)')
     parser.add_argument('pairs', nargs=2, help="cell line (1) and drug (2) expression profile")
     args = parser.parse_args()
     return args
@@ -71,6 +72,11 @@ def scipy_corr(s1, s2, corr_mode):
         return st.kendalltau(s1[ixs], s2[ixs])
     elif corr_mode == 'spearman':
         return st.spearmanr(s1[ixs], s2[ixs])
+
+
+def rm_zero(df_input):
+    df = df_input.loc[(df_input != 0).any(1), (df_input != 0).any(0)]
+    return df
 
 
 def corr_by_col_of_df(df_cell, df_drug, top, corr_m):
@@ -118,10 +124,11 @@ def main(argv=None):
                 print('df_cells.shape after mean normalization:', df_cells.shape)
                 print('df_drugs.shape after mean normalization:', df_drugs.shape)
 
-            df_cells = df_cells.loc[(df_cells!=0).any(1), (df_cells!=0).any(0)]
-            df_drugs = df_drugs.loc[(df_drugs!=0).any(1), (df_drugs!=0).any(0)]
-            print('df_cells.shape after remove all zero rows and columns:', df_cells.shape)
-            print('df_drugs.shape after remove all zero rows and columns:', df_drugs.shape)
+            if argv.rmZeroColRow:
+                df_cells = df_cells.loc[(df_cells!=0).any(1), (df_cells!=0).any(0)]
+                df_drugs = df_drugs.loc[(df_drugs!=0).any(1), (df_drugs!=0).any(0)]
+                print('df_cells.shape after remove all zero rows and columns:', df_cells.shape)
+                print('df_drugs.shape after remove all zero rows and columns:', df_drugs.shape)
             ixs = df_cells.index.intersection(df_drugs.index)
             print('The numbers of intersection index:', len(ixs))
 
