@@ -68,7 +68,7 @@ def t_by_index_of_df(df_snv, df_drug_corr, min_s):
             p_value_list.append(t_result[1])
         count_snv += 1
         dfp[df_snv.index[i]] = np.array(p_value_list)
-    print('[All_snv]: {}, [processed_snv]: {}, [drugs]: {}'.format(count_all_snv, count_snv,count_drug / count_snv))
+    print('[All_snv]: {}, [processed_snv]: {}, [drugs]: {}'.format(count_all_snv, count_snv, count_drug / count_snv))
     return dfp, ii1_len_list
 
 
