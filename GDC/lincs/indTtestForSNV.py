@@ -8,6 +8,7 @@ use_message = '''
     Usage: python -u indTtestSNV.py [-d d, -m m] -s df_snv -c [df_correlation1 ....]
 '''
 
+
 class Usage(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -75,8 +76,8 @@ def main(argv=None):
     try:
         if argv is None:
             argv = args_parse()
-        print('[Start]:{}\nsnv_file: {}\nmin: {}\ncorr_list: {}'.format(str(time_0), argv.snv, argv.min, argv.corr))
         time_0 = datetime.datetime.now()
+        print('[Start]:{}\nsnv_file: {}\nmin: {}\ncorr_list: {}'.format(str(time_0), argv.snv, argv.min, argv.corr))
         prepare_output_dir('./p_value_df')
 
         df_snv, snv_base = openDF(argv.snv)
