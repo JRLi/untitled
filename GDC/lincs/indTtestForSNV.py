@@ -88,7 +88,7 @@ def main(argv=None):
         df_snv, snv_base = open_df(argv.snv)
         print('{}: {}'.format(snv_base, df_snv.shape))
 
-        with open('./Summary_snv_{}_{}'.format(snv_base, argv.min), 'w') as status:
+        with open('./Summary_{}_{}'.format(snv_base, argv.min), 'w') as status:
             status.write('corr_file\tintersection\t{}\n'.format('\t'.join(df_snv.index)))
             for corr_file in argv.corr:
                 time_1 = datetime.datetime.now()
