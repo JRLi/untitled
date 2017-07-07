@@ -4,15 +4,14 @@ import numpy as np
 import argparse
 import os, sys, datetime
 
-dir_c = 'correlation_output'
-dir_p = 'p_value_output'
-
 
 def args_parse():
     parser = argparse.ArgumentParser(description='need correlation and pvalue dirs')
     parser.add_argument('-m', '--mode', type=str, choices=['p', 'c'], default='p', help="p or c, default is p")
-    parser.add_argument('-t', '--threshold', type=float, default=0.05, help="threshold of cor or p, default is 0.1")
+    parser.add_argument('-t', '--threshold', type=float, default=0.05, help="threshold of cor or p, default is 0.05")
     parser.add_argument('-s', '--snv', type=str, choices=['g', 'l'], default='g', help='snv type, default is g')
+    parser.add_argument('-c', '--corr', type=str, default='correlation_output', help='correlation directory')
+    parser.add_argument('-p', '--p_value', type=str, default='p_value_output', help='p_value directory')
     args = parser.parse_args()
     return args
 
@@ -59,15 +58,15 @@ def main(argv=None):
         argv = args_parse()
         print(argv)
         id2drug = lincs_dict('GSE70138_20151231_annotation.txt')
-        list_p = os.listdir(dir_p)
+        list_p = os.listdir(argv.p_value)
         time_1 = datetime.datetime.now()
         with open('result_exp_vs_lincs_vs_snv_{}_{}.txt'.format(argv.mode, argv.threshold), 'w') as outFile:
             outFile.write('file\tGDC\tlincsID\tcellLine\tdrug\tdrugID\tum\th\tsnvGene\tgeneID\t')
             outFile.write('chr\tlocus\tcorrelation\tp_value\n' if argv.snv == 'l' else 'correlation\tp_value\n')
             for fileName_p in list_p:
                 fileName_c = fileName_p.replace('P_value', 'Corr', 1)
-                path_p = os.path.join(dir_p, fileName_p)
-                path_c = os.path.join(dir_c, fileName_c)
+                path_p = os.path.join(argv.p_value, fileName_p)
+                path_c = os.path.join(argv.corr, fileName_c)
                 df_p, p_base = openDF(path_p)
                 df_c, c_base = openDF(path_c)
                 ii = locate(df_p, argv.mode, argv.threshold) if argv.mode == 'p' else locate(df_c, argv.mode, argv.threshold)
