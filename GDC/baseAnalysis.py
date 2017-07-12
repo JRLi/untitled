@@ -26,6 +26,12 @@ def args_parse():
     args = parser.parse_args()
     return args
 
+def prepare_output_dir(output_dir):
+    if os.path.exists(output_dir):
+        pass
+    else:
+        os.mkdir(output_dir)
+
 
 def openDF(in_path, direct = 'f'):
     fpath, fname = os.path.split(in_path)
@@ -133,6 +139,7 @@ def main(argv=None):
         argv = args_parse()
         time_1 = datetime.datetime.now()
         print('\nStart time:', str(time_1))
+        prepare_output_dir('es_out')
 
         data, data_base = openDF(argv.pairs[0], argv.direct[0])
         reg, reg_base = openDF(argv.pairs[1], argv.direct[1])
@@ -160,7 +167,7 @@ def main(argv=None):
         print('After permutation:', str(time_4 - time_3))
         #es.to_csv('./{}_{}{}{}_perm{}_ES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm), na_rep='NA')
         fes = final_ES(es)
-        fes.to_csv('./{}_{}{}{}_perm{}_finalES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm), na_rep='NA')
+        fes.to_csv('es_out/{}_{}{}{}_p{}_fES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm), na_rep='NA')
         time_5 = datetime.datetime.now()
         print('Finished time:', str(time_5))
         print('All used time:', str(time_5 - time_1))
