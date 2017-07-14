@@ -21,7 +21,8 @@ def main():
             print(dirPath, tmp_count)
     print('dir:{}\ttsv:{}'.format(dir_count, tsv_count))
     print(len(title_set))
-    print(title_set)
+    for i in title_set:
+        print(i)
 
 if __name__ == '__main__':
     main()
