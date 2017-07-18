@@ -33,7 +33,7 @@ def locate(df_input, mode, threshold):
     return ii
 
 
-def lincs_dict(path):
+def cmap_dict(path):
     lineCount = 0
     id2anno = {}
     with open(path) as inputFile:
@@ -56,7 +56,7 @@ def main(argv=None):
     if argv is None:
         argv = args_parse()
         print(argv)
-        id2drug = lincs_dict('cmap_instances_02.txt')
+        id2drug = cmap_dict('cmap_instances_02.txt')
         list_p = os.listdir(argv.p_value)
         time_1 = datetime.datetime.now()
         with open('result_exp_vs_cmap_vs_snv_{}_{}.txt'.format(argv.mode, argv.threshold), 'w') as outFile:
@@ -76,7 +76,7 @@ def main(argv=None):
                 if len(ii[1]) > 0:
                     for r, c in zip(ii[0], ii[1]):
                         snv = df_p.columns[c].replace(':', '\t')
-                        drug = id2drug.get(df_p.index[r])
+                        drug = id2drug.get(str(df_p.index[r]))
                         outFile.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(
                             title, gdc, df_p.index[r], drug, snv, df_c.iloc[r, c], df_p.iloc[r, c]))
                 else:
