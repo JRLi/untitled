@@ -15,13 +15,13 @@ seq_pp2 = 'CAAGCAGAAGACGGCATACGAGATCGGTCTCGGCATTCCTGCTGAACCGCTCTTCCGATCT'
 rev_pp2 = 'AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCGATCTCGTATGCCGTCTTCTGCTTG'   # SRR3234010_1.fastq have 10698296
 seq_pp1 = 'AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT'
 rev_pp1 = 'AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT'  # some R2 file contain this, like SRR3233954_2.fastq
-seq_ill_uni =   'AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT'
+seq_ill_uni = 'AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT'
 seq_3 = 'CGCTCTTGGGAACACGT' # SRR3234010_1.fastq have 9711954 at 4st nt
 seq_2_pp2 = 'AGAGGACCTGAACAACGTGTTCCCAAGA'
 read1='AATGATACGGCGACCACCGAGATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT'
-read2 = 'TGCAGGGCCAGCA'
+read2 = 'CGCCTTGGCCGTACAGCAGCCTCTTA'
 seqr = reverse_complement(read2, True)
-print(seqr)
+print('test', seqr)
 
 barcode1 = 'TGACTA'
 barcode2 = reverse_complement(barcode1, True)
@@ -70,6 +70,7 @@ print('\n', 'aa')
 print(','.join(map(str, list1)))
 import pandas as pd
 import numpy as np
+import os, sys
 df1 = pd.read_table('D://Project/drs/GDC/test.txt', index_col=0)
 print(df1.shape)
 print(df1.index[0], df1.columns[0])
@@ -91,3 +92,172 @@ def rreplace(s, old, new, occurrence):
 aaa = 'Corr_pvalue_abcgdgefg'
 print(aaa.lstrip('Corr_pvalue_'))   # strip use ''one chr" to trim.
 print(rreplace(aaa, 'g', '', 1))
+
+path = '/home/siza/siza/imm/fq_TCR/SRR3233947_1_trim.fastq'
+fpath, fname = os.path.split(path)
+fbase, fext = os.path.splitext(fname)
+srr, others = fname.split('_', 1)
+print(srr)
+print(path)
+print(fpath)
+print(fname)
+print(fbase)
+print(fext)
+print(os.path.join(fpath, fbase + '_g' +fext))
+
+string1 = 'TCGA-LUSC_GSE70138_Level4_ZSVCINF_A375.311_m_scipy_pearson_top250_snv_indel.extracted.snp.code.matrix.LUSC_2'
+file = string1[string1.rfind('snv_indel'):] + '.csv'
+print(file)
+
+df1 = pd.read_table('D:/Project/drs/result_tmp/cmapID2CL.txt', index_col=0)
+print(df1.shape)
+print(df1)
+print(df1.iloc[:2, :])
+df1.T.to_csv('D:/Project/drs/result_tmp/cmap_id2clDF', sep='\t')
+
+
+def openDF(in_path, direct = 'f'):
+    fpath, fname = os.path.split(in_path)
+    fbase, fext = os.path.splitext(fname)
+    df = pd.read_csv(in_path, index_col=0) if fext == '.csv' else pd.read_table(in_path, index_col=0)
+    if direct == 't':
+        df = df.transpose()
+    return df, fbase
+
+
+pid = 'MCF7'
+
+dfi, dfi_base = openDF('D:/Project/drs/result_tmp/cmap_50.csv')
+dfa = pd.read_table('D:/Project/drs/result_tmp/cmap_id2clDF')
+dfa2 = pd.read_table('D:/Project/drs/result_tmp/cmapID2CL.txt')
+print(dfa)
+ii = np.where(dfa.values == pid)[1]
+ii2 = np.where(dfa2.values == pid)[0]
+print(ii)
+print(ii2)
+df2 = dfi.iloc[:, ii]
+print(df2)
+
+
+f_1 = 1.3e-6
+f_2 = 0.000000001
+print(f_1)
+print(type(f_1))
+print(f_1 - f_2)
+print(f_2 + f_1)    # not precision value, 1.3010000000000001e-06
+
+a = False
+b = True
+
+if a or b:
+    print('1')
+else:
+    print('2')
+
+import scipy.stats as st
+
+arr1 = np.array([0.3, 0.5, 0.1, 0.12])
+arr2 = np.array([0.12, 0.3, 0.1, 0.5, 0.9, 0.92, 0.88, 0.73, 0.48, 0.55])
+arr3 = np.array([0.1, 0.0])
+t_1 = st.ttest_ind(arr1, arr2)
+t_2 = st.ttest_ind(arr2, arr3)
+print(t_1)
+print(t_2)
+print('\t'.join(arr1.astype(str)))
+df1 = pd.read_csv('D:/Project/drs/result_tmp/LUSC_A549_250_3_n50.csv', index_col=0)
+print('\t'.join(df1.index))
+
+word1 = 'Summary_snv_snv_indel.extracted.snp.LUSC.genelevel.mut.status_2_g_3'
+a = word1[word1.find('.snp.') + 5:]
+b = a[:a.find('.')]
+print(b)
+
+word2 = 'ttest_snv_indel.extracted.snp.LUSC.genelevel.mut.status_2_g_LUSC_A549_m_top100_3.csv'
+title = word2.replace('snv_indel.extracted.', '')
+title = rreplace(title, '.mut.status', '', 1)
+print(title)
+gdc = title[title.find('snp.') + 4:]
+gdc = gdc[:gdc.find('.')]
+
+print(gdc)
+
+dictA = {'a': 1, 'b': 2, 'c': 3}
+dictB = {'d': 4, 'e': 5, 'f': 6}
+dictX = {'A': dictA, 'B': dictB}
+print(len(dictX), len(dictB), len(dictA))
+print(dictX)
+
+string1 = '>aaaa\n'
+id = string1.rstrip().split(' ')[0].lstrip('>')
+print(id)
+
+string2 = r'C:\read'
+print(string2)
+
+list1 = [1, 2, 3, 5, 8]
+list2 = [1, 2, 3, 9]
+print(set(list1).symmetric_difference(list2))
+
+def cmap_dict(path):
+    lineCount = 0
+    id2anno = {}
+    with open(path) as inputFile:
+        for line in inputFile:
+            lineCount += 1
+            if lineCount == 1:
+                continue
+            lf = line.rstrip().split('\t')
+            drug_annotation = '\t'.join([lf[6], lf[2], lf[13], lf[14], lf[11], lf[4], lf[5]])
+            id2anno[lf[0]] = drug_annotation
+    return id2anno
+
+id2drug = cmap_dict('D:/Project/drs/gdsc/cmap/cmap_instances_02.txt')
+print(len(id2drug))
+print(id2drug.get('364'))
+
+list1 = ['aaaTCccc', 'cvdfafa', 'a ferqTCweq']
+list2 = [x for x in list1 if 'TC' in x]
+print(list2)
+
+string1 = 'aaa\r\n'
+string2 = 'bbb\n'
+string3 = 'ccc\t'
+string4 = 'ddd\r'
+print(string3 + string1)
+print(string2)
+print(string3.rstrip() + string1.rstrip())
+print(string2.rstrip())
+print(string3.rstrip())
+print(string4, string3)
+
+a1 = '14'
+a2 = '3'
+print('{:.3f}'.format(int(a1) / int(a2)))
+l1 = ['aa', '14', 'gg']
+l2 = ['gg', 'cc', 'aa']
+print('\t'.join(l1 + l2))
+
+q1 = 0.4
+q2 = 0.9
+q3 = 1.33
+print(list(map(str, [q1, q2, q3])))
+
+set1 = set(l1 + l2)
+print(set1)
+for a in l2:
+    if a in set1:
+        print(a)
+
+print(int('5') / 3)
+
+dict1 = {'c': 3, 'd': 5, 'a': 0, 'b': 13, 'e': 16, 'h': 'rr', 'g': 1, 'f': '5'}
+for k in dict1:
+    print('{},{}'.format(k, dict1.get(k)))
+for k, v in dict1.items():
+    print('{},{}'.format(k, v))
+from collections import OrderedDict
+dict2 = sorted(dict1)
+dict3 = sorted(dict1.items())
+dict4 = dict(sorted(dict1.items()))
+dict5 = OrderedDict(sorted(dict1.items()))
+print(dict1, dict2, dict3, dict4, dict5, sep='\n')

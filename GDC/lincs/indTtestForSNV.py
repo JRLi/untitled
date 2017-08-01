@@ -85,18 +85,18 @@ def main(argv=None):
         print('[Start]:{}\nsnv_file: {}\nmin: {}\ncorr_list: {}'.format(str(time_0), argv.snv, argv.min, argv.corr))
         prepare_output_dir('./p_value_df')
 
-        df_snv, snv_base = open_df(argv.snv)
+        df_snv, snv_base = open_df(argv.snv)    # get SNV data frame
         print('{}: {}'.format(snv_base, df_snv.shape))
 
         with open('./Summary_{}_{}'.format(snv_base, argv.min), 'w') as status:
             status.write('corr_file\tintersection\t{}\n'.format('\t'.join(df_snv.index)))
             for corr_file in argv.corr:
                 time_1 = datetime.datetime.now()
-                df_drug_corr, dc_base = open_df(corr_file, argv.direct)
+                df_drug_corr, dc_base = open_df(corr_file, argv.direct)     # get CORR data frame
                 print('{}: {}\nExpect target shape: ({}, {})'.
                       format(dc_base, df_drug_corr.shape, df_drug_corr.shape[0], df_snv.shape[0]))
 
-                ixc = df_snv.columns.intersection(df_drug_corr.columns)
+                ixc = df_snv.columns.intersection(df_drug_corr.columns)     # columns intersection
                 print('intersection samples:', len(ixc))
                 df_corr = df_drug_corr[ixc]
                 df_snv = df_snv[ixc]

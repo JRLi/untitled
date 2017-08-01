@@ -35,7 +35,7 @@ def main():
             print('{}: should have samples: {}\tactual files:{}'.format(data, len(sample_list), len(file_list)))
             if len(sample_list) != len(file_list):
                 print('\t[Check]set of samples:{}\tset of files:{}'.format(len(set(sample_list)), len(set(file_list))))
-            print('symmetric_difference:', set(sample_list).symmetric_difference(file_list))
+            print('symmetric_difference:', set(sample_list).symmetric_difference(file_list))    # important
     print('all data:{}'.format(dir_count))
 
 if __name__ == '__main__':
