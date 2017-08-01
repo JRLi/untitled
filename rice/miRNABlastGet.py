@@ -13,9 +13,9 @@ exp_d = 'exp_files'
 
 def args_parse():
     parser = argparse.ArgumentParser(description='For parse fa to miRNA or degradome')
-    parser.add_argument('-q', '--query', type=float, default=1.0, help='Query coverage threshold, default is 0.9')
-    parser.add_argument('-t', '--target', type=float, default=1.0, help='Target coverage threshold, default is 0.9')
-    parser.add_argument('-i', '--identity', type=float, default=1.0, help='Identity threshold, default is 0.9')
+    parser.add_argument('-q', '--query', type=float, default=0.9, help='Query coverage threshold, default is 0.9')
+    parser.add_argument('-t', '--target', type=float, default=0.9, help='Target coverage threshold, default is 0.9')
+    parser.add_argument('-i', '--identity', type=float, default=0.9, help='Identity threshold, default is 0.9')
     args = parser.parse_args()
     return args
 
@@ -52,7 +52,7 @@ def unmatched_get(read_list, rp):
 def blast_get(b_file, qc, tc, idt, rp):
     read_list = []
     mirna_read_list_dict = defaultdict(list)
-    with open(os.path.join(blast_d, b_file)) as in_a, open(os.path.join(out_d, rp + '.osa_miRNA_{}_{}_[]'.format(
+    with open(os.path.join(blast_d, b_file)) as in_a, open(os.path.join(out_d, rp + '.osa_miRNA_{}_{}_{}'.format(
             qc, tc, idt)), 'w') as out_a:
         out_a.write('QueryID\tQ_length\tTargetID\tT_length\tQ_st\tQ_et\tT_st\tT_et\tE-value\tBit-score\tGap_open\t'
                     'Match\tAlign\tQ_coverage\tT_coverage\tIdentity\n')
@@ -70,9 +70,9 @@ def blast_get(b_file, qc, tc, idt, rp):
         return read_list, dict(sorted(mirna_read_list_dict.items()))
 
 
-def get_exp(br_list, m2rl_dict, m2s_dict, rp):
-    with open(os.path.join(exp_d, rp + '_exp_with_mean.csv'), 'w') as exp_wm, \
-            open(os.path.join(exp_d, rp + '_exp_no_mean.csv'), 'w') as exp_nm:
+def get_exp(br_list, m2rl_dict, m2s_dict, rp, qc, tc, idt):
+    with open(os.path.join(exp_d, '{}_{}_{}_{}_exp_wm.csv'.format(rp, qc, tc, idt)), 'w') as exp_wm, \
+            open(os.path.join(exp_d, '{}_{}_{}_{}_exp_nm.csv').format(rp, qc, tc, idt), 'w') as exp_nm:
         mir_count = 0
         for miRNA, r_list in m2rl_dict.items():
             mir_count += 1
@@ -84,7 +84,7 @@ def get_exp(br_list, m2rl_dict, m2s_dict, rp):
                 count_wm += (r_count / br_list.count(r_ID))
             exp_nm.write('{},{},{}\n'.format(miRNA, count_nm, seq))
             exp_wm.write('{},{},{}\n'.format(miRNA, count_wm, seq))
-            if mir_count <=5:
+            if mir_count <= 5:
                 print('[check]{}\t{}\t{}\t{}\t{}\t{}'.format(rp, miRNA, count_nm, count_wm, r_list, seq))
 
 
@@ -107,8 +107,9 @@ def main(argv=None):
                 b_read_list, mr2read_dict = blast_get(file, argv.query, argv.target, argv.identity, rice_p)
                 print('{}\tmir2ReadList_dict: {}\tb_reads_list: {}'.format(rice_p, len(mr2read_dict), len(b_read_list)))
                 unmatched_get(b_read_list, rice_p)  # get unmatched fa
-                get_exp(b_read_list, mr2read_dict, mirna2seq_dict, rice_p)  # get exp file
+                # get exp file
+                get_exp(b_read_list, mr2read_dict, mirna2seq_dict, rice_p, argv.query, argv.target, argv.identity)
+        print('[Done]Processed file:{}'.format(file_count))
 
-        # open(os.path.join(out_d, rp + '.osa_miRNA_exp_{}_{}_[]'.format(qc, tc, idt)), 'w') as out_e
 if __name__ == '__main__':
     sys.exit(main())
