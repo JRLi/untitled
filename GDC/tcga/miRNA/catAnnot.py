@@ -25,7 +25,7 @@ def main():
                             lab_f.write(','.join([lf[2], label]) + '\n')
                         else:
                             n_count += 1
-                            lf[2] = 'unknown_case_' + str(n_count)
+                            lf[2] = 'unknown-case-id-xxx-0' + str(n_count)
                             out_f.write(','.join(lf) + '\n')
                             lab_f.write(','.join([lf[2], '2']) + '\n')
 
