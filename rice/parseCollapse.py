@@ -10,7 +10,7 @@ degradome = 'forDeg'
 def args_parse():
     parser = argparse.ArgumentParser(description='For parse fa to miRNA or degradome')
     parser.add_argument('-m', '--miRNA', nargs=2, type=int, default=[18, 24], help='miRNA length range threshold')
-    parser.add_argument('-d', '--degrade', type=int, default=5, help='degradome minimum length threshold')
+    parser.add_argument('-d', '--degrade', type=int, default=10, help='degradome minimum length threshold')
     args = parser.parse_args()
     return args
 
