@@ -107,7 +107,7 @@ def main(argv=None):
 
                 df_p, label_1_list = t_by_index_of_df(df_label, df_exp, argv.min)
                 print('Actual result shape:', df_p.shape)
-                df_p.to_csv('p_value_df/ttest_{}_{}_{}.csv'.format(label_base, dc_base, argv.min))
+                df_p.to_csv('p_value_df/ttest_{}_{}.csv'.format(dc_base, argv.min))
                 status.write('{}\t{}\t{}\n'.format(dc_base, len(ixc), '\t'.join(label_1_list)))
                 time_3 = datetime.datetime.now()
                 print('\t[Finished time]: {}\t[Used time]: {}'.format(str(time_3), str(time_3 - time_1)))
