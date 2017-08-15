@@ -42,6 +42,21 @@ def get_df(path, f_list, key_wd):
     return file2m2e_dict, ct_file
 
 
+def df_stat(df_input, direct='row_wise'):
+    df = df_input.copy()
+    axis_dir = 1 if direct == 'row_wise' else 0
+    df['mean'] = df_input.mean(axis_dir)
+    df['std'] = df_input.std(axis_dir)
+    df['max'] = df_input.max(axis_dir)
+    df['min'] = df_input.min(axis_dir)
+    return df
+
+
+def rpm(df_input):
+    df = df_input.copy()
+    return (df / df.sum()) * 1000000
+
+
 def main():
     check_list = ['CD4', 'CD8', 'CD14', 'CD15', 'CD19', 'CD56', 'CD235a', 'WB', 'serum', 'exosome']
     path_d = 'GSE100467'
@@ -52,7 +67,11 @@ def main():
         c2m2e_dict, file_count = get_df(path_d, file_list, check)
         df1 = pd.DataFrame(c2m2e_dict)
         df1 = df1.fillna(0)
+        df2 = rpm(df1)
+        df1 = df_stat(df1)
+        df2 = df_stat(df2)
         df1.to_csv(path_d.lower() + '_' + check + '.csv')
+        df2.to_csv(path_d.lower() + '_' + check + '_rpm.csv')
         f_count += file_count
     print('[Done], all files:', f_count)
 
