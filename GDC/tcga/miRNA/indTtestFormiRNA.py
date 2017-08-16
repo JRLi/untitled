@@ -21,6 +21,8 @@ def args_parse():
     parser = argparse.ArgumentParser(description=use_message)
     parser.add_argument('-d', '--direct', choices=['n', 't'], default='n',
                         help="exp file direction, n is normal(columns are samples), t is transpose; default is n")
+    parser.add_argument('-n', '--nan', help='set specific value to np.nan')
+    parser.add_argument('-f', '--fillna', action="store_true", help='set -f if need mean value to fill nan')
     parser.add_argument('-m', '--min', type=int, default=3, help='minimum number of samples per condition')
     parser.add_argument('-l', '--label', help="label-patient binary profile")
     parser.add_argument('-e', '--exp', nargs='+',
@@ -47,11 +49,17 @@ def open_df(in_path, direct='n'):
 
 
 def scipy_ttest_ind(s1, s2):
-    return st.ttest_ind(s1, s2)
+    return st.ttest_ind(s1, s2, equal_var=False)
 
 
 def rm_zero(df_input):
     df = df_input.loc[(df_input != 0).any(1), (df_input != 0).any(0)]
+    return df
+
+
+def imputation_mean(df_input, direct=1):
+    df = df_input.copy()
+    df = df.T.fillna(df.T.mean()).T if direct == 1 else df.fillna(df.mean())
     return df
 
 
@@ -85,6 +93,7 @@ def main(argv=None):
     try:
         if argv is None:
             argv = args_parse()
+            print(argv)
         time_0 = datetime.datetime.now()
         print('[Start]:{}\nlabel_file: {}\nmin: {}\nexp_list: {}'.format(str(time_0), argv.label, argv.min, argv.exp))
         prepare_output_dir('./p_value_df')
@@ -97,6 +106,15 @@ def main(argv=None):
             for exp_file in argv.exp:
                 time_1 = datetime.datetime.now()
                 df_exp, dc_base = open_df(exp_file, argv.direct)     # get exp data frame
+
+                if argv.nan:
+                    df_exp = df_exp.replace(argv.nan, np.nan)
+                    df_exp = df_exp.astype(float)
+
+                if argv.fillna:
+                    print('[Process fill nan, default]:', df_exp.isnull().sum(1), sep='\n')
+                    df_exp = imputation_mean(df_exp, 1) if argv.direct == 'n' else imputation_mean(df_exp)
+                    print('[Process fill nan, after]:', df_exp.isnull().sum(1), sep='\n')
                 print('{}: {}\nExpect target shape: ({}, {})'.
                       format(dc_base, df_exp.shape, df_exp.shape[0], df_label.shape[0]))
 
