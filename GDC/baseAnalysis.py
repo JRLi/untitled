@@ -26,6 +26,7 @@ def args_parse():
     args = parser.parse_args()
     return args
 
+
 def prepare_output_dir(output_dir):
     if os.path.exists(output_dir):
         pass

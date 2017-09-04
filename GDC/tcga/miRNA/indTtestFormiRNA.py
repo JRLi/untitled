@@ -22,6 +22,8 @@ def args_parse():
     parser.add_argument('-d', '--direct', choices=['n', 't'], default='n',
                         help="exp file direction, n is normal(columns are samples), t is transpose; default is n")
     parser.add_argument('-n', '--nan', help='set specific value to np.nan')
+    parser.add_argument('-v', '--variance', action="store_true", help='If set, perform a standard independent 2 sample '
+                                                                      'test that assumes equal population variances')
     parser.add_argument('-f', '--fillna', action="store_true", help='set -f if need mean value to fill nan')
     parser.add_argument('-m', '--min', type=int, default=3, help='minimum number of samples per condition')
     parser.add_argument('-l', '--label', help="label-patient binary profile")
@@ -48,8 +50,8 @@ def open_df(in_path, direct='n'):
     return df, fbase
 
 
-def scipy_ttest_ind(s1, s2):
-    return st.ttest_ind(s1, s2, equal_var=False)
+def scipy_ttest_ind(s1, s2, var):
+    return st.ttest_ind(s1, s2, equal_var=var)
 
 
 def rm_zero(df_input):
@@ -63,7 +65,7 @@ def imputation_mean(df_input, direct=1):
     return df
 
 
-def t_by_index_of_df(df_label, df_exp, min_s):
+def t_by_index_of_df(df_label, df_exp, min_s, variance):
     dfp = pd.DataFrame(index=df_exp.index)
     count_mir = 0
     ii1_len_list = []
@@ -78,7 +80,7 @@ def t_by_index_of_df(df_label, df_exp, min_s):
         count_mir += 1
         ss1 = df_exp.iloc[i, ii1[0]]
         ss0 = df_exp.iloc[i, ii0[0]]
-        t_result = scipy_ttest_ind(ss1, ss0)
+        t_result = scipy_ttest_ind(ss1, ss0, variance)
         p_value_list.append(t_result[1])
         t_list.append(ss1.mean())
         n_list.append(ss0.mean())
@@ -112,9 +114,9 @@ def main(argv=None):
                     df_exp = df_exp.astype(float)
 
                 if argv.fillna:
-                    print('[Process fill nan, default]:', df_exp.isnull().sum(1), sep='\n')
+                    print('[Process fill nan, default]:', df_exp.isnull().sum(1).sum(), sep='\n')
                     df_exp = imputation_mean(df_exp, 1) if argv.direct == 'n' else imputation_mean(df_exp)
-                    print('[Process fill nan, after]:', df_exp.isnull().sum(1), sep='\n')
+                    print('[Process fill nan, after]:', df_exp.isnull().sum(1).sum(), sep='\n')
                 print('{}: {}\nExpect target shape: ({}, {})'.
                       format(dc_base, df_exp.shape, df_exp.shape[0], df_label.shape[0]))
 
@@ -123,10 +125,12 @@ def main(argv=None):
                 df_exp = df_exp[ixc]
                 df_label = df_label[ixc]
 
-                df_p, label_1_list = t_by_index_of_df(df_label, df_exp, argv.min)
+                df_p, label_1_list = t_by_index_of_df(df_label, df_exp, argv.min, argv.variance)
+                suffix = 'standard_ind_t' if argv.variance else "welch_t"
                 print('Actual result shape:', df_p.shape)
-                df_p.to_csv('p_value_df/ttest_{}_{}.csv'.format(dc_base, argv.min))
+                df_p.to_csv('p_value_df/ttest_{}_{}_{}.csv'.format(dc_base, argv.min, suffix))
                 status.write('{}\t{}\t{}\n'.format(dc_base, len(ixc), '\t'.join(label_1_list)))
+
                 time_3 = datetime.datetime.now()
                 print('\t[Finished time]: {}\t[Used time]: {}'.format(str(time_3), str(time_3 - time_1)))
 

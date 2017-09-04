@@ -28,7 +28,7 @@ def args_parse():
                         default='n', help='value direction, n: normal, r: reverse(i.e. cmap), default is n')
     parser.add_argument('-o', '--out_th', type=int, default=0, help='if not 0, remove outline z-score to prevent '
                                                                     'divide by zero encountered in log10')
-    parser.add_argument("-m", "--median", action="store_false", help="median_normalizing mode, is set, no use it")
+    parser.add_argument("-m", "--median", action="store_false", help="median_normalizing mode, if set, no use it")
     parser.add_argument("-z", "--zscore", action="store_false", help="z score transfer, is set, no use it")
     parser.add_argument('profile', nargs='+', help="drug expression profile, csv or txt file list separated by space")
     args = parser.parse_args()
