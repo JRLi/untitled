@@ -125,8 +125,8 @@ def main(argv=None):
         df_nm = df_nm.fillna(0)
         df_wm = df_wm.fillna(0)
         print('df_nm.shape: {}\tdf_wm.shape: {}'.format(df_nm.shape, df_wm.shape))
-        df_nm.to_csv('blast_df_nm.csv')
-        df_wm.to_csv('blast_df_wm.csv')
+        df_nm.to_csv('blast_df_{}_{}_{}_nm.csv'.format(argv.query, argv.target, argv.identity))
+        df_wm.to_csv('blast_df_{}_{}_{}_wm.csv'.format(argv.query, argv.target, argv.identity))
         print('[Done]Processed file:{}'.format(file_count))
 
 if __name__ == '__main__':

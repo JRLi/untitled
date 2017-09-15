@@ -261,3 +261,98 @@ dict3 = sorted(dict1.items())
 dict4 = dict(sorted(dict1.items()))
 dict5 = OrderedDict(sorted(dict1.items()))
 print(dict1, dict2, dict3, dict4, dict5, sep='\n')
+
+check = '01'
+print(int(check))
+
+with open('D:/Project/circ_miRNA/barcode_files/TCGA-ACC.csv') as in_f:
+    print(next(in_f))
+    #print(in_f.readline().rstrip())
+    l_c = 0
+    for line in in_f:
+        l_c += 1
+        if l_c <= 5:
+            print(line.rstrip())
+
+list3 = [1, 2, 3, 'a', 5]
+list3[3] = 'b'
+print(list3)
+
+dict1 = {'g1':{'1': 1, '2': 2, '3':3}, 'g2':{'1':2, '3':'null', '4': 5}, 'g3':{'0': 0, '5': 3}}
+print(dict1.keys())
+frame1 = pd.DataFrame(dict1)
+print(frame1)
+frame1 = frame1.replace('null', np.nan)
+print(frame1.iloc[:,1])
+print(frame1.isnull().sum(1))
+print(frame1.T.mean())
+frame3 = frame1.T.fillna(frame1.T.mean()).T
+print(frame3)
+
+
+frame1 = frame1.fillna(0)
+print(frame1)
+print(frame1.sum())
+print(frame1.mean(1))
+frame2 = (frame1 / frame1.sum()) * 10
+print(frame2)
+print(frame2.sum())
+
+
+def open_df(in_path, direct='n'):
+    fpath, fname = os.path.split(in_path)
+    fbase, fext = os.path.splitext(fname)
+    df = pd.read_csv(in_path, index_col=0) if fext == '.csv' else pd.read_table(in_path, index_col=0)
+    print('{}: Transpose: {}'.format(fbase, direct))
+    if direct == 't':
+        df = df.transpose()
+    return df, fbase
+
+
+s1 = pd.Series({'1': 1, '2': 2, '3':3})
+s2 = pd.Series({'1':2, '3':'null', '4': 5})
+s3 = pd.Series({'0': 0, '5': 3})
+df1 = pd.DataFrame()
+df1['g1'] = s1
+df1['g2'] = s2
+print(df1.shape)
+
+str1 = 'AF-141 bST0049 Gis11\n'
+print(str1.rstrip().lower().split(' '))
+
+np.random.seed(0)
+import matplotlib.pyplot as plt
+import csv
+df = pd.DataFrame(2.5 * np.random.randn(20,5) + 3)
+print(df)
+print(df.mean(0), df.std(0))
+print(df.iloc[:, 0])
+
+df.iloc[:, 0].plot.density()
+plt.show()
+str1 = 'aaa'
+print(str1)
+with open('D:/Project/circ_miRNA/tcga_test.csv') as in_f:
+    aaaa, bbbb, cccc, *dddd = csv.reader(in_f)
+    print(type(aaaa))
+    print(aaaa)
+    print(bbbb)
+    print(cccc)
+    for mir in dddd:
+        print(mir)
+print(aaaa[0])
+
+import re
+target_cancer = 'Prostate'
+match_map = {"Prostate": [r"TCGA-PRAD", r"PC\d{1,2}\Z"], "Colon": [r"TCGA-COAD", r"\d{1}S\d{1,2}"], "Healthy": [r"N\d{1,2}\Z"]}
+matchs = match_map[target_cancer]
+print(matchs)
+
+a = 'atcgnaacg'
+
+if any(c in a for c in ('N', 'n')):
+    print('yes')
+else:
+    print('No')
+
+print(a.replace('aa*', ''))

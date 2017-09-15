@@ -125,8 +125,8 @@ def main(argv=None):
                 print('df_drugs.shape after mean normalization:', df_drugs.shape)
 
             if argv.rmZeroColRow:
-                df_cells = df_cells.loc[(df_cells!=0).any(1), (df_cells!=0).any(0)]
-                df_drugs = df_drugs.loc[(df_drugs!=0).any(1), (df_drugs!=0).any(0)]
+                df_cells = df_cells.loc[(df_cells != 0).any(1), (df_cells != 0).any(0)]
+                df_drugs = df_drugs.loc[(df_drugs != 0).any(1), (df_drugs != 0).any(0)]
                 print('df_cells.shape after remove all zero rows and columns:', df_cells.shape)
                 print('df_drugs.shape after remove all zero rows and columns:', df_drugs.shape)
             ixs = df_cells.index.intersection(df_drugs.index)
@@ -151,6 +151,7 @@ def main(argv=None):
         print(sys.stderr, err.msg)
         print(sys.stderr, "Terminated, for help use -h or --help")
         return 2
+
 
 if __name__ == "__main__":
     sys.exit(main())
