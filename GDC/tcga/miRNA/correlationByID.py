@@ -17,6 +17,7 @@ miRNA_d = 'split'
 mRNA_lab_d = 'label_mRNA'
 miRNA_lab_d = 'label'
 
+
 class Usage(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -28,6 +29,8 @@ def args_parse():
                         default='p', help='Correlation method, p: pearson, k: kendall, s: spearman; default is p')
     parser.add_argument('-d', '--direct', choices=['n', 't'],
                         default=['n', 'n'], nargs=2, help="n is normal, t is transpose; default is n n")
+    parser.add_argument('-t', '--type', type=str, choices=['t', 'n', 'a'], default='t',
+                        help='type of samples, t: tumor, n: normal, a: all, default is t')
     parser.add_argument('pairs', nargs=2, help="mRNA (1) and miRNA (2)")
     args = parser.parse_args()
     return args
@@ -61,6 +64,7 @@ def main(argv=None):
             tcga_count = 0
             final_dict = {}
             col_list = ['correlation', 'p_value', 'mRNA_tumor', 'miRNA_tumor', 'intersection']
+            s_type = {'t': 'tumor', 'n': 'normal', 'a': 'all'}.get(argv.type)
             for m_file in mRNAs:
                 if m_file.startswith('TCGA'):
                     tcga_count += 1
@@ -73,11 +77,19 @@ def main(argv=None):
                     dfml, lm_base = open_df(os.path.join(mRNA_lab_d,'lab_' + dfm_base + '.csv'), 't')
                     dfmil, lmi_base = open_df(os.path.join(miRNA_lab_d,'lab_' + dfm_base + '.csv'), 't')
 
-                    ii1_m = np.where(dfml.iloc[0, :] == 1)
-                    ii1_mi = np.where(dfmil.iloc[0, :] == 1)
-
-                    s_m = dfm.ix[int(argv.pairs[0]), ii1_m[0]]
-                    s_mi = dfmi.ix[argv.pairs[1], ii1_mi[0]]
+                    if  s_type == 'all':
+                        s_m = dfm.ix[int(argv.pairs[0]), :]
+                        s_mi = dfmi.ix[argv.pairs[1], :]
+                    elif s_type == 'tumor':
+                        ii1_m = np.where(dfml.iloc[0, :] == 1)
+                        ii1_mi = np.where(dfmil.iloc[0, :] == 1)
+                        s_m = dfm.ix[int(argv.pairs[0]), ii1_m[0]]
+                        s_mi = dfmi.ix[argv.pairs[1], ii1_mi[0]]
+                    else:
+                        ii1_m = np.where(dfml.iloc[0, :] == 0)
+                        ii1_mi = np.where(dfmil.iloc[0, :] == 0)
+                        s_m = dfm.ix[int(argv.pairs[0]), ii1_m[0]]
+                        s_mi = dfmi.ix[argv.pairs[1], ii1_mi[0]]
                     mt_num = len(s_m)
                     mit_num = len(s_mi)
                     print('[{}]\tmRNA_tumor:{}\tmiRNA_tumor:{}'.format(dfm_base, mt_num, mit_num))
@@ -92,7 +104,7 @@ def main(argv=None):
                         df1 = pd.DataFrame()
                         df1['g1028'] = s_m
                         df1[argv.pairs[1]] = s_mi
-                        df1.to_csv('BRCA_{}_{}.csv'.format(argv.pairs[1], 'g1028'))
+                        df1.to_csv('BRCA_{}_{}_{}.csv'.format(argv.pairs[1], 'g1028', s_type))
 
                     method = {'p': 'pearson', 'k': 'kendall', 's': 'spearman'}.get(argv.corr)
                     cor_e, p_value = scipy_corr(s_m, s_mi, method)
@@ -104,7 +116,7 @@ def main(argv=None):
                     final_dict[dfm_base] = tmp_dict
             df = pd.DataFrame(final_dict)
             df = df.reindex(index=col_list)
-            df.T.to_csv('{}_{}_correlation.csv'.format(argv.pairs[1], argv.pairs[0]))
+            df.T.to_csv('{}_{}_{}_correlation.csv'.format(argv.pairs[1], argv.pairs[0], s_type))
             print('Done. process {} files.\n'.format(tcga_count))
 
     except Usage as err:
