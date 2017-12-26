@@ -4,6 +4,9 @@ import sys
 import argparse
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import scipy.stats as st
+from collections import defaultdict
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -17,22 +20,21 @@ from sklearn.feature_selection import RFE
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import VotingClassifier
 from sklearn.linear_model import LogisticRegression
-import matplotlib.pyplot as plt
-from collections import defaultdict
 
 
 def args_parse():
     parser = argparse.ArgumentParser(description='rice miRNAs machine learning')
-    parser.add_argument('-t', '--top', type=int, default=50, help='Top/down -t rice; if set 0 equal all, default is 50')
-    parser.add_argument('-ct', '--cor_t', type=str, choices=['30', '40', '50'], default='40',
-                        help='choice the correlation file type, default is "40", indicate cor_t40_c0.1.csv')
-    parser.add_argument('-c', '--cor', type=float, default=0.1, help='Correlation threshold of miRNAs that have between'
-                                                                     'miRNA and phenotype, default and min is 0.1')
+    parser.add_argument('-t', '--top', type=c_int, default=50, help='Top/down -t rice; if set 0 equal all, must '
+                                                                    'between 0 and 55, default is 50')
+    parser.add_argument('-ct', '--cor_t', type=c_int, default=40, help='choice the correlation file type, between 0 and'
+                                                                       '55, default is 40, indicate cor_t40.csv')
+    parser.add_argument('-c', '--cor', type=c_float, default=0.1, help='Correlation threshold of miRNAs have between'
+                                                                       'miRNA and phenotype, 0 ~ 1, default is 0.1')
     parser.add_argument('-i', '--imputation', action='store_true', help="if set, use imputation, else drop nan")
     subparsers = parser.add_subparsers(help='choice machine learning method', dest='command')
     parser_a = subparsers.add_parser('mv', help='method is Major voting')
     parser_a.add_argument('-v', '--cv', type=int, default=10, help='-v fold cross validation, default is 10')
-    parser_a.add_argument('-s', '--test_size', type=float, default=0.4, help="test size, default is 0.4")
+    parser_a.add_argument('-s', '--test_size', type=c_float, default=0.4, help="test size, default is 0.4")
     parser_a.add_argument('-f', '--f_number', type=int, default=10, help='number of features, default is 10')
     parser_b = subparsers.add_parser('svm', help='method is loocv SVM')
     parser_b.add_argument('-k', '--kernel', choices=['linear', 'poly', 'rbf', 'sigmoid'],
@@ -44,6 +46,20 @@ def args_parse():
 class Usage(Exception):
     def __init__(self, msg):
         self.msg = msg
+
+
+def c_int(value):
+    i_value = int(value)
+    if i_value < 0 or i_value > 55:
+        raise argparse.ArgumentTypeError("%s is an invalid int, must between 0 and 55" % value)
+    return i_value
+
+
+def c_float(value):
+    f_value = float(value)
+    if f_value < 0.0 or f_value > 1.0:
+        raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]" % (f_value,))
+    return f_value
 
 
 def prepare_output_dir(output_dir):
@@ -109,16 +125,61 @@ def cor_dict_get(path_in, cor_t):
         return p2gp_dict, p2gm_dict
 
 
+def scipy_corr(s1, s2, corr_mode):
+    ixs = s1.index.intersection(s2.index)
+    if corr_mode == 'pearson':
+        return st.pearsonr(s1[ixs], s2[ixs])
+    elif corr_mode == 'spearman':
+        return st.spearmanr(s1[ixs], s2[ixs])
+
+
+def rice_corr(df_mir, df_tar, top=0, cor='pearson'):
+    df_c = pd.DataFrame(columns=df_tar.columns, index=df_mir.columns)
+    all_count, t_count = 0, 0
+    for ct in df_tar.columns:
+        series_t = df_tar[ct]
+        series_t.dropna(inplace=True)
+        series_t = s_top_gt(series_t, top)
+        t_count += 1
+        c_list, p_list = [], []
+        for cm in df_mir.columns:
+            series_c = df_mir[cm]
+            all_count += 1
+            corr, pvl = scipy_corr(series_c, series_t, cor)
+            c_list.append(corr)
+            p_list.append(pvl)
+        df_c[ct] = pd.Series(c_list).values
+    return df_c
+
+
+def extract_rc(output, df_in, ii, tp_3):
+    with open(output, 'w') as out_f:
+        out_f.write('Phenotype,miRNA,{}\n'.format(tp_3))
+        for r, c in zip(ii[0], ii[1]):
+            phe = df_in.columns[c]
+            mir = df_in.index[r]
+            out_f.write('{},{},{}\n'.format(phe, mir, df_in.iloc[r, c]))
+
+
+def locate(df_input, mode, threshold):
+    if mode == 'p':
+        ii = np.where(df_input.values <= threshold)
+    else:
+        ii = np.where((df_input.values >= threshold) | (df_input.values <= -threshold))     # numpy or = |
+    return ii
+
+
 def sort_by_value(dict_in, rev=True):
     return sorted(dict_in, key=dict_in.get, reverse=rev)
 
 
-def s_top_gt(series_input, top_n):
+def s_top_gt(series_input, top_n, gt=False):
     ss = series_input.copy()
     if top_n != 0:
         ss.sort_values(inplace=True)
         ss = ss.iloc[range(-top_n, top_n)]
-        ss = ss.gt(ss.mean()).astype(np.short)
+        if gt:
+            ss = ss.gt(ss.mean()).astype(np.short)
     return ss
 
 
@@ -155,7 +216,8 @@ def mvc(df_x, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     for clf, label, clr, ls in zip(all_clf, clf_labels, colors, lines):
         scores = cross_val_score(estimator=clf, X=x_train, y=y_train, cv=cv, scoring='roc_auc')
         lf = title_n.split('_', 1)
-        tmp2_list.append('{}\t{}\tROC AUC [{}]\t{:.2f}\t+/- {:.2f}'.format(lf[0], lf[1], label, scores.mean(), scores.std()))
+        tmp2_list.append('{}\t{}\tROC AUC [{}]\t{:.2f}\t+/- {:.2f}'.
+                         format(lf[0], lf[1], label, scores.mean(), scores.std()))
         y_pre = clf.fit(x_train, y_train).predict_proba(x_test)[:, 1]
         fpr, tpr, thresholds = roc_curve(y_true=y_test, y_score=y_pre)
         roc_auc = auc(x=fpr, y=tpr)
@@ -171,7 +233,6 @@ def mvc(df_x, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     plt.ylabel('True Positive Rate')
     fn = title_n.replace(' ', '_').replace('(', '').replace(')', '')
     plt.savefig(os.path.join(out_path, fn))
-    #plt.show()
     plt.gcf().clear()
     return tmp1, tmp2
 
@@ -187,7 +248,7 @@ def rice_mv(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, c_v, des, ct):
             out_f.write(t + '\n')
             out_f.write('positive_cor_mir\t{}\nnegative_cor_mir\t{}\np_and_n_cor_mir\t{}\n'.
                         format(len(p2gp.get(t)), len(p2gm.get(t)), len(p2gp.get(t)) + len(p2gm.get(t))))
-            ss1 = s_top_gt(df_t[t], top_n)
+            ss1 = s_top_gt(df_t[t], top_n, True)
             out_f.write('low_rice\t{}\t{}\nhigh_rice\t{}\t{}\n'.
                         format(len(ss1[ss1 == 0]), ','.join(ss1[ss1 == 0].index.tolist()), len(ss1[ss1 == 1]),
                                ','.join(ss1[ss1 == 1].index.tolist())))
@@ -204,22 +265,29 @@ def rice_mv(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, c_v, des, ct):
 def main(argv=None):
     if argv is None:
         argv = args_parse()
-        c_file = 'cor_t{}_c0.1.csv'.format(argv.cor_t)
+        prepare_output_dir('cor_file')
         r_file = 'nm_df129_imputation.csv' if argv.imputation else 'nm_df129.csv'
         df, df_b = open_df(r_file)
         df.drop(['type (H)', 'waxy (H)'], axis=1, inplace=True)
+
         if not argv.imputation:
             print('No imputation, drop all NA')
             df = df.dropna()
         i = 'imputation' if argv.imputation else 'drop_na'
         df_t = df.iloc[:, 924:]
         df_f = df.iloc[:, :924]
+        c_path = os.path.join('cor_file', 'cor_t{}.csv'.format(argv.cor_t))
+
+        if not os.path.exists(c_path):
+            df_c = rice_corr(df_f, df_t, argv.cor_t, 'pearson')
+            extract_rc(c_path, df_c, locate(df_c, 'c', 0.01), 'correlation')
+
         if argv.command == 'mv':
             print('Using Major Voting')
             o_p = 'roc_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}_p'.\
                 format(i, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number, argv.cv)
             prepare_output_dir(o_p)
-            rice_mv(df_f, df_t, argv.top, argv.cor, c_file, o_p, argv.test_size, argv.f_number, argv.cv, i, argv.cor_t)
+            rice_mv(df_f, df_t, argv.top, argv.cor, c_path, o_p, argv.test_size, argv.f_number, argv.cv, i, argv.cor_t)
         elif argv.command == 'svm':
             print('Using leave one out cross validation SVM')
         else:
