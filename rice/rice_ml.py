@@ -20,10 +20,15 @@ from sklearn.feature_selection import RFE
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import VotingClassifier
 from sklearn.linear_model import LogisticRegression
+use_message = '''
+    Need Python3 and numpy, pandas, scipy, and sklearn; or Anaconda.
+    Use 129 rices (113 rices if drop na) * 924 miRNAs and 17 phenotypes for machine learning.
+    Example: python -u rice_ml.py -t 50 -ct 40 -c 0.1 -i mv -v 10 -s 0.4 -f 15
+'''
 
 
 def args_parse():
-    parser = argparse.ArgumentParser(description='rice miRNAs machine learning')
+    parser = argparse.ArgumentParser(description=use_message)
     parser.add_argument('-t', '--top', type=c_int, default=50, help='Top/down -t rice; if set 0 equal all, must '
                                                                     'between 0 and 55, default is 50')
     parser.add_argument('-ct', '--cor_t', type=c_int, default=40, help='choice the correlation file type, between 0 and'
@@ -34,7 +39,7 @@ def args_parse():
     subparsers = parser.add_subparsers(help='choice machine learning method', dest='command')
     parser_a = subparsers.add_parser('mv', help='method is Major voting')
     parser_a.add_argument('-v', '--cv', type=int, default=10, help='-v fold cross validation, default is 10')
-    parser_a.add_argument('-s', '--test_size', type=c_float, default=0.4, help="test size, default is 0.4")
+    parser_a.add_argument('-s', '--test_size', type=c_float, default=0.4, help="test size, 0 ~ 1, default is 0.4")
     parser_a.add_argument('-f', '--f_number', type=int, default=10, help='number of features, default is 10')
     parser_b = subparsers.add_parser('svm', help='method is loocv SVM')
     parser_b.add_argument('-k', '--kernel', choices=['linear', 'poly', 'rbf', 'sigmoid'],
@@ -134,21 +139,20 @@ def scipy_corr(s1, s2, corr_mode):
 
 
 def rice_corr(df_mir, df_tar, top=0, cor='pearson'):
-    df_c = pd.DataFrame(columns=df_tar.columns, index=df_mir.columns)
-    all_count, t_count = 0, 0
-    for ct in df_tar.columns:
-        series_t = df_tar[ct]
+    df_f = df_mir.copy()
+    df_t = df_tar.copy()
+    df_c = pd.DataFrame(columns=df_t.columns, index=df_f.columns)
+    for ct in df_t.columns:
+        series_t = df_t[ct]
         series_t.dropna(inplace=True)
         series_t = s_top_gt(series_t, top)
-        t_count += 1
-        c_list, p_list = [], []
-        for cm in df_mir.columns:
-            series_c = df_mir[cm]
-            all_count += 1
+        c_list = []
+        for cm in df_f.columns:
+            series_c = df_f[cm]
             corr, pvl = scipy_corr(series_c, series_t, cor)
             c_list.append(corr)
-            p_list.append(pvl)
         df_c[ct] = pd.Series(c_list).values
+    df_c = df_c.fillna(0)
     return df_c
 
 
@@ -170,7 +174,7 @@ def locate(df_input, mode, threshold):
 
 
 def sort_by_value(dict_in, rev=True):
-    return sorted(dict_in, key=dict_in.get, reverse=rev)
+    return sorted(dict_in, key=dict_in.get, reverse=rev)    # return key list, the first element is with largest value
 
 
 def s_top_gt(series_input, top_n, gt=False):
