@@ -156,6 +156,15 @@ def rice_corr(df_mir, df_tar, top=0, cor='pearson'):
     return df_c
 
 
+def percentile(df_input, per_th=10):
+    df = df_input.copy()
+    for i in range(0, len(df.columns)):
+        qv = np.percentile(df.iloc[:, i], per_th)
+        print(qv)
+        df.iloc[:, i][df.iloc[:, i] < qv] = qv
+    return df
+
+
 def extract_rc(output, df_in, ii, tp_3):
     with open(output, 'w') as out_f:
         out_f.write('Phenotype,miRNA,{}\n'.format(tp_3))
@@ -294,6 +303,7 @@ def main(argv=None):
             rice_mv(df_f, df_t, argv.top, argv.cor, c_path, o_p, argv.test_size, argv.f_number, argv.cv, i, argv.cor_t)
         elif argv.command == 'svm':
             print('Using leave one out cross validation SVM')
+            
         else:
             raise Usage('No command!!\nMust input mv or svm!')
     print('Done.')
