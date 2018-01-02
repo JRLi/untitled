@@ -29,6 +29,10 @@ use_message = '''
 
 def args_parse():
     parser = argparse.ArgumentParser(description=use_message)
+    parser.add_argument('-m', '--mean', choices=['w', 'n'], default='n',
+                        help='exp with (w) or without (n) mean, default is n')
+    parser.add_argument('-n', '--normalization', choices=['q', 'r'], default='r',
+                        help='expression normalization, r is rpm, q is quantile, default is r')
     parser.add_argument('-t', '--top', type=c_int, default=50, help='Top/down -t rice; if set 0 equal all, must '
                                                                     'between 0 and 55, default is 50')
     parser.add_argument('-ct', '--cor_t', type=c_int, default=40, help='choice the correlation file type, between 0 and'
@@ -42,7 +46,7 @@ def args_parse():
     parser_a.add_argument('-s', '--test_size', type=c_float, default=0.4, help="test size, 0 ~ 1, default is 0.4")
     parser_a.add_argument('-f', '--f_number', type=int, default=10, help='number of features, default is 10')
     parser_b = subparsers.add_parser('svm', help='method is loocv SVM')
-    parser_b.add_argument('-k', '--kernel', choices=['linear', 'poly', 'rbf', 'sigmoid'],
+    parser_b.add_argument('-k', '--kernel', choices=['linear', 'poly', 'rbf', 'sigmoid'], default='linear',
                           help='Specifies the kernel type to be used in the algorithm, default is linear')
     args = parser.parse_args()
     return args
@@ -81,40 +85,6 @@ def open_df(in_path, direct='n'):
     if direct == 't':
         df = df.transpose()
     return df, fbase
-
-
-def loo_svm_1(df_in, ss_label, k_type):
-    clf = svm.SVC(kernel=k_type)
-    tp, fp, fn, tn = 0, 0, 0, 0
-    for i in range(len(ss_label)):
-        b = list(range(len(ss_label)))
-        b.pop(i)
-        print("Run{}:".format(i))
-        test_x = df_in.iloc[i:i + 1]
-        test_y = ss_label[i]
-        train_x = df_in.iloc[b]
-        train_y = ss_label[b]
-        model = clf.fit(train_x, train_y)
-        predict = model.predict(test_x)[0]
-        print(test_y, predict)
-        if test_y != 0 and predict != 0:
-            tp += 1
-        elif test_y == 0 and predict != 0:
-            fp += 1
-        elif test_y != 0 and predict == 0:
-            fn += 1
-        elif test_y == 0 and predict == 0:
-            tn += 1
-        p, r = 0, 0
-        try:
-            p = (tp / (tp + fp))
-            r = (tp / (tp + fn))
-        except:
-            print('p or r have exception')
-        print(", TP {}, FP {}, TN {}, FN {}, precision {:.3f}, recall {:.3f}".format(tp, fp, tn, fn, p, r))
-    precision = tp / (tp + fp)
-    recall = tp / (tp + fn)
-    return "precision\t{:.3f}\trecall\t{:.3f}".format(precision, recall)
 
 
 def cor_dict_get(path_in, cor_t):
@@ -275,18 +245,70 @@ def rice_mv(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, c_v, des, ct):
             out_f2.write('\n'.join([roc_p, roc_n, roc_a]) + '\n')
 
 
+def svm_sys(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, kernel_s, des, ct):
+    df_t = df_ti.copy()
+    df_f = df_fi.copy()
+    p2gp, p2gm = cor_dict_get(path_c, c_t)
+    with open(os.path.join('loosv_svm_rice'), 'w') as out_f:
+        out_f.write('features_shape:\t{}\ntarget_shape:\t{}\n'.format(df_fi.shape, df_ti.shape))
+        out_f.write('[loosv svm]\ncor_threshold:\t{}\ntop_target:\t{}\n\n'.format(c_t, top_n))
+        for t in df_t.columns:
+            out_f.write('{}\n'.format(t))
+            ss1 = s_top_gt(df_t[t], top_n, True)
+            out_f.write('low_rice\t{}\t{}\nhigh_rice\t{}\t{}\n'.
+                        format(len(ss1[ss1 == 0]), ','.join(ss1[ss1 == 0].index.tolist()), len(ss1[ss1 == 1]),
+                               ','.join(ss1[ss1 == 1].index.tolist())))
+            df_fp = df_f.loc[ss1.index, p2gp.get(t)]
+            df_fm = df_f.loc[ss1.index, p2gm.get(t)]
+            df_fa = pd.concat([df_fp, df_fm], 1)
+            up_r = loo_svm(df_fp, ss1, kernel_s)
+            dn_r = loo_svm(df_fm, ss1, kernel_s)
+            ud_r = loo_svm(df_fa, ss1, kernel_s)
+            out_f.write('cor >= {}\t{}\t{}\n{}\n'.format(c_t, len(p2gp.get(t)), ','.join(p2gp.get(t)), up_r))
+            out_f.write('cor <= -{}\t{}\t{}\n{}\n'.format(c_t, len(p2gm.get(t)), ','.join(p2gm.get(t)), dn_r))
+            out_f.write('cor+-{}\t{}\n{}\n'.format(c_t, len(p2gp.get(t)) + len(p2gm.get(t)), ud_r))
+
+
+def loo_svm(df_in, ss_label, k_type):
+    clf = svm.SVC(kernel=k_type)
+    tp, fp, fn, tn = 0, 0, 0, 0
+    for i in range(len(ss_label)):
+        b = list(range(len(ss_label)))
+        b.pop(i)
+        test_x = df_in.iloc[i:i + 1]
+        test_y = ss_label[i]
+        train_x = df_in.iloc[b]
+        train_y = ss_label[b]
+        model = clf.fit(train_x, train_y)
+        predict = model.predict(test_x)[0]
+        print(test_y, predict)
+        if test_y != 0 and predict != 0:
+            tp += 1
+        elif test_y == 0 and predict != 0:
+            fp += 1
+        elif test_y != 0 and predict == 0:
+            fn += 1
+        elif test_y == 0 and predict == 0:
+            tn += 1
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+    return "precision\t{:.3f}\trecall\t{:.3f}".format(precision, recall)
+
+
 def main(argv=None):
     if argv is None:
         argv = args_parse()
         prepare_output_dir('cor_file')
-        r_file = 'nm_df129_imputation.csv' if argv.imputation else 'nm_df129.csv'
+        prefix_f = 'nm_df129_' if argv.mean == 'n' else 'wm_df129_'
+        root_f = argv.normalization
+        r_file = prefix_f + root_f + '_i.csv' if argv.imputation else prefix_f + root_f + '.csv'
         df, df_b = open_df(r_file)
         df.drop(['type (H)', 'waxy (H)'], axis=1, inplace=True)
 
         if not argv.imputation:
             print('No imputation, drop all NA')
             df = df.dropna()
-        i = 'imputation' if argv.imputation else 'drop_na'
+        i = argv.mean + root_f + '_imputation' if argv.imputation else argv.mean + root_f + '_drop_na'
         df_t = df.iloc[:, 924:]
         df_f = df.iloc[:, :924]
         c_path = os.path.join('cor_file', 'cor_t{}.csv'.format(argv.cor_t))
@@ -297,10 +319,11 @@ def main(argv=None):
 
         if argv.command == 'mv':
             print('Using Major Voting')
-            o_p = 'roc_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}_p'.\
-                format(i, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number, argv.cv)
+            o_p = 'roc_{}_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}_dir'.\
+                format(i, argv.mean + root_f, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number, argv.cv)
             prepare_output_dir(o_p)
-            rice_mv(df_f, df_t, argv.top, argv.cor, c_path, o_p, argv.test_size, argv.f_number, argv.cv, i, argv.cor_t)
+            rice_mv(df_f, df_t, argv.top, argv.cor, c_path, o_p, argv.test_size,
+                    argv.f_number, argv.cv, i, argv.cor_t)
         elif argv.command == 'svm':
             print('Using leave one out cross validation SVM')
             
