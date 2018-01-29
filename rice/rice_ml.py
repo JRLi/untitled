@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import scipy.stats as st
 from collections import defaultdict
 from sklearn import svm
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import average_precision_score
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
@@ -17,6 +19,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
 from sklearn.feature_selection import RFE
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import f_regression
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import VotingClassifier
 from sklearn.linear_model import LogisticRegression
@@ -46,6 +50,7 @@ def args_parse():
     parser_a.add_argument('-s', '--test_size', type=c_float, default=0.4, help="test size, 0 ~ 1, default is 0.4")
     parser_a.add_argument('-f', '--f_number', type=int, default=10, help='number of features, default is 10')
     parser_b = subparsers.add_parser('svm', help='method is loocv SVM')
+    parser_b.add_argument('-f', '--f_number', type=int, default=10, help='number of features, default is 10')
     parser_b.add_argument('-k', '--kernel', choices=['linear', 'poly', 'rbf', 'sigmoid'], default='linear',
                           help='Specifies the kernel type to be used in the algorithm, default is linear')
     args = parser.parse_args()
@@ -156,6 +161,28 @@ def sort_by_value(dict_in, rev=True):
     return sorted(dict_in, key=dict_in.get, reverse=rev)    # return key list, the first element is with largest value
 
 
+def plot_top(series_input, top_cor, top_ml, s_title, out_path):
+    ss = series_input.copy()
+    ss.sort_values(inplace=True)
+    sc = ss.iloc[range(-top_cor, top_cor)]
+    sm = ss.iloc[range(-top_ml, top_ml)]
+    ap = ss.plot(title=s_title)
+    lb_pre = 'cor&learning' if top_cor == top_ml else 'cor'
+    cl_t = '{}_top_{}: {}'.format(lb_pre, top_cor, sc[0])
+    cl_b = '{}_bottom_{}: {}'.format(lb_pre, top_cor, sc[-1])
+    ap.axhline(y=sc[0], color='g', linestyle='--', label=cl_t)
+    ap.axhline(y=sc[-1], color='g', linestyle='--', label=cl_b)
+    if top_cor != top_ml:
+        ml_t = 'learning_top_{}: {}'.format(top_cor, sm[0])
+        ml_b = 'learning_bottom_{}: {}'.format(top_cor, sm[-1])
+        ap.axhline(y=sm[0], color='r', linestyle='--', label=ml_t)
+        ap.axhline(y=sm[-1], color='r', linestyle='--', label=ml_b)
+    ap.legend(loc='lower right')
+    fn = 'Sample_' + s_title.replace(' ', '_').replace('(', '').replace(')', '')
+    plt.savefig(os.path.join(out_path, fn))
+    plt.gcf().clear()
+
+
 def s_top_gt(series_input, top_n, gt=False):
     ss = series_input.copy()
     if top_n != 0:
@@ -177,6 +204,40 @@ def select_r(df_in, ss_label, f_n, eps):
     else:
         f_list = df_in.columns.tolist()
         return df_in.values, ','.join(f_list)
+
+
+def anova_svm(df_in, ss_label, k_type, ts, f_n, svm_c, title_n, out_path):
+    x = df_in.copy()
+    x = x.values
+    f_list = df_in.columns.tolist()
+    fn = f_n if len(f_list) > f_n else 'all'
+    x_train, x_test, y_train, y_test = train_test_split(x, ss_label, test_size=ts, random_state=1)
+
+    anova_filter = SelectKBest(f_regression)
+    clf = svm.SVC(kernel=k_type)
+    an_sv = Pipeline([('anova', anova_filter), ('svc', clf)])
+    an_sv.set_params(anova__k=fn, svc__C=svm_c).fit(x_train, y_train)
+    y_score = an_sv.decision_function(x_test)
+    average_precision = average_precision_score(y_test, y_score)
+    precision, recall, _ = precision_recall_curve(y_test, y_score)
+
+    mask = an_sv.named_steps.anova.get_support()
+    m_mir_list = df_in.columns[mask]
+    f_list = ','.join(m_mir_list)
+    tmp1 = '{}\t{}'.format(len(f_list), ','.join(f_list))
+
+    plt.step(recall, precision, color='b', alpha=0.2, where='post')
+    plt.fill_between(recall, precision, step='post', alpha=0.2, color='b')
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.ylim([0.0, 1.05])
+    plt.xlim([0.0, 1.0])
+    plt.title('{} Precision-Recall curve: AP={:0.2f}'.format(title_n, average_precision))
+    fn = 'PR_' + title_n.replace(' ', '_').replace('(', '').replace(')', '')
+    plt.savefig(os.path.join(out_path, fn))
+    plt.gcf().clear()
+
+    return ''
 
 
 def mvc(df_x, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
@@ -231,6 +292,7 @@ def rice_mv(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, c_v, des, ct):
             out_f.write(t + '\n')
             out_f.write('positive_cor_mir\t{}\nnegative_cor_mir\t{}\np_and_n_cor_mir\t{}\n'.
                         format(len(p2gp.get(t)), len(p2gm.get(t)), len(p2gp.get(t)) + len(p2gm.get(t))))
+            plot_top(df_t[t], ct, top_n, t, out_p)
             ss1 = s_top_gt(df_t[t], top_n, True)
             out_f.write('low_rice\t{}\t{}\nhigh_rice\t{}\t{}\n'.
                         format(len(ss1[ss1 == 0]), ','.join(ss1[ss1 == 0].index.tolist()), len(ss1[ss1 == 1]),
@@ -238,6 +300,7 @@ def rice_mv(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, c_v, des, ct):
             df_fp = df_f.loc[ss1.index, p2gp.get(t)]
             df_fm = df_f.loc[ss1.index, p2gm.get(t)]
             df_fa = pd.concat([df_fp, df_fm], 1)
+
             mir_p, roc_p = mvc(df_fp, ss1, '{}_positive'.format(t), out_p, t_size, f_n, 300, c_v)
             mir_n, roc_n = mvc(df_fm, ss1, '{}_negative'.format(t), out_p, t_size, f_n, 300, c_v)
             mir_a, roc_a = mvc(df_fa, ss1, '{}_p_and_n'.format(t), out_p, t_size, f_n, 300, c_v)
@@ -245,7 +308,7 @@ def rice_mv(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, c_v, des, ct):
             out_f2.write('\n'.join([roc_p, roc_n, roc_a]) + '\n')
 
 
-def svm_sys(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, kernel_s, des, ct):
+def svm_sys(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, svm_c, kernel_s, des, ct):
     df_t = df_ti.copy()
     df_f = df_fi.copy()
     p2gp, p2gm = cor_dict_get(path_c, c_t)
@@ -261,38 +324,13 @@ def svm_sys(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, kernel_s, des, ct):
             df_fp = df_f.loc[ss1.index, p2gp.get(t)]
             df_fm = df_f.loc[ss1.index, p2gm.get(t)]
             df_fa = pd.concat([df_fp, df_fm], 1)
-            up_r = loo_svm(df_fp, ss1, kernel_s)
-            dn_r = loo_svm(df_fm, ss1, kernel_s)
-            ud_r = loo_svm(df_fa, ss1, kernel_s)
+
+            up_r = anova_svm(df_fp, ss1, kernel_s, t_size, f_n, svm_c, '{}_positive'.format(t), out_p)
+            dn_r = anova_svm(df_fm, ss1, kernel_s, t_size, f_n, svm_c, '{}_negative'.format(t), out_p)
+            ud_r = anova_svm(df_fa, ss1, kernel_s, t_size, f_n, svm_c, '{}_p_and_n'.format(t), out_p)
             out_f.write('cor >= {}\t{}\t{}\n{}\n'.format(c_t, len(p2gp.get(t)), ','.join(p2gp.get(t)), up_r))
             out_f.write('cor <= -{}\t{}\t{}\n{}\n'.format(c_t, len(p2gm.get(t)), ','.join(p2gm.get(t)), dn_r))
             out_f.write('cor+-{}\t{}\n{}\n'.format(c_t, len(p2gp.get(t)) + len(p2gm.get(t)), ud_r))
-
-
-def loo_svm(df_in, ss_label, k_type):
-    clf = svm.SVC(kernel=k_type)
-    tp, fp, fn, tn = 0, 0, 0, 0
-    for i in range(len(ss_label)):
-        b = list(range(len(ss_label)))
-        b.pop(i)
-        test_x = df_in.iloc[i:i + 1]
-        test_y = ss_label[i]
-        train_x = df_in.iloc[b]
-        train_y = ss_label[b]
-        model = clf.fit(train_x, train_y)
-        predict = model.predict(test_x)[0]
-        print(test_y, predict)
-        if test_y != 0 and predict != 0:
-            tp += 1
-        elif test_y == 0 and predict != 0:
-            fp += 1
-        elif test_y != 0 and predict == 0:
-            fn += 1
-        elif test_y == 0 and predict == 0:
-            tn += 1
-    precision = tp / (tp + fp)
-    recall = tp / (tp + fn)
-    return "precision\t{:.3f}\trecall\t{:.3f}".format(precision, recall)
 
 
 def main(argv=None):
@@ -326,7 +364,8 @@ def main(argv=None):
                     argv.f_number, argv.cv, i, argv.cor_t)
         elif argv.command == 'svm':
             print('Using leave one out cross validation SVM')
-            
+            o_p = 'roc_{}_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}_dir'. \
+                format(i, argv.mean + root_f, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number, argv.cv)
         else:
             raise Usage('No command!!\nMust input mv or svm!')
     print('Done.')
