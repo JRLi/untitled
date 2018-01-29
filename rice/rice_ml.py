@@ -44,15 +44,15 @@ def args_parse():
     parser.add_argument('-c', '--cor', type=c_float, default=0.1, help='Correlation threshold of miRNAs have between'
                                                                        'miRNA and phenotype, 0 ~ 1, default is 0.1')
     parser.add_argument('-i', '--imputation', action='store_true', help="if set, use imputation, else drop nan")
+    parser.add_argument('-s', '--test_size', type=c_float, default=0.4, help="test size, 0 ~ 1, default is 0.4")
+    parser.add_argument('-f', '--f_number', type=int, default=10, help='number of features, default is 10')
     subparsers = parser.add_subparsers(help='choice machine learning method', dest='command')
     parser_a = subparsers.add_parser('mv', help='method is Major voting')
     parser_a.add_argument('-v', '--cv', type=int, default=10, help='-v fold cross validation, default is 10')
-    parser_a.add_argument('-s', '--test_size', type=c_float, default=0.4, help="test size, 0 ~ 1, default is 0.4")
-    parser_a.add_argument('-f', '--f_number', type=int, default=10, help='number of features, default is 10')
     parser_b = subparsers.add_parser('svm', help='method is loocv SVM')
-    parser_b.add_argument('-f', '--f_number', type=int, default=10, help='number of features, default is 10')
     parser_b.add_argument('-k', '--kernel', choices=['linear', 'poly', 'rbf', 'sigmoid'], default='linear',
                           help='Specifies the kernel type to be used in the algorithm, default is linear')
+    parser_b.add_argument('-p', '--penalty', type=float, default=1.0, help='Penalty of the error term, default is 1.0')
     args = parser.parse_args()
     return args
 
@@ -237,7 +237,24 @@ def anova_svm(df_in, ss_label, k_type, ts, f_n, svm_c, title_n, out_path):
     plt.savefig(os.path.join(out_path, fn))
     plt.gcf().clear()
 
-    return ''
+    y_pre = an_sv.fit(x_train, y_train).predict_proba(x_test)[:, 1]
+    fpr, tpr, thresholds = roc_curve(y_true=y_test, y_score=y_pre)
+    roc_auc = auc(x=fpr, y=tpr)
+    lf = title_n.split('_', 1)
+    tmp2 = '{}\t{}\tROC AUC\t{:.2f}'.format(lf[0], lf[1], roc_auc)
+    plt.plot(fpr, tpr, color='b', linestyle='-', label='{} (auc = {:.2f})'.format(title_n, roc_auc))
+    plt.legend(loc='lower right')
+    plt.plot([0, 1], [0, 1], linestyle='--', color='gray', linewidth=2)
+    plt.xlim([-0.1, 1.1])
+    plt.ylim([-0.1, 1.1])
+    plt.title(title_n)
+    plt.grid()
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    fn = 'ROC_' + title_n.replace(' ', '_').replace('(', '').replace(')', '')
+    plt.savefig(os.path.join(out_path, fn))
+    plt.gcf().clear()
+    return tmp1, tmp2
 
 
 def mvc(df_x, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
@@ -285,8 +302,8 @@ def rice_mv(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, c_v, des, ct):
     df_t = df_ti.copy()
     df_f = df_fi.copy()
     p2gp, p2gm = cor_dict_get(path_c, c_t)
-    with open('b_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}'.format(des, ct, top_n, c_t, t_size, f_n, c_v), 'w') as out_f, \
-            open('f_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}'.format(des, ct, top_n, c_t, t_size, f_n, c_v), 'w') as out_f2:
+    with open('mb_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}'.format(des, ct, top_n, c_t, t_size, f_n, c_v), 'w') as out_f, \
+            open('mf_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}'.format(des, ct, top_n, c_t, t_size, f_n, c_v), 'w') as out_f2:
         out_f2.write('Phenotype\tmir_cor_type\troc_method\t{}_fold_cv_auc\t{}_fold_cv_std\n'.format(c_v, c_v))
         for t in df_t.columns:
             out_f.write(t + '\n')
@@ -312,7 +329,8 @@ def svm_sys(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, svm_c, kernel_
     df_t = df_ti.copy()
     df_f = df_fi.copy()
     p2gp, p2gm = cor_dict_get(path_c, c_t)
-    with open(os.path.join('loosv_svm_rice'), 'w') as out_f:
+    with open('sb_{}_ct{}_top{}_cor{}_test{}_f{}'.format(des, ct, top_n, c_t, t_size, f_n), 'w') as out_f, \
+            open('sf_{}_ct{}_top{}_cor{}_test{}_f{}'.format(des, ct, top_n, c_t, t_size, f_n), 'w') as out_f2:
         out_f.write('features_shape:\t{}\ntarget_shape:\t{}\n'.format(df_fi.shape, df_ti.shape))
         out_f.write('[loosv svm]\ncor_threshold:\t{}\ntop_target:\t{}\n\n'.format(c_t, top_n))
         for t in df_t.columns:
@@ -325,12 +343,14 @@ def svm_sys(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, svm_c, kernel_
             df_fm = df_f.loc[ss1.index, p2gm.get(t)]
             df_fa = pd.concat([df_fp, df_fm], 1)
 
-            up_r = anova_svm(df_fp, ss1, kernel_s, t_size, f_n, svm_c, '{}_positive'.format(t), out_p)
-            dn_r = anova_svm(df_fm, ss1, kernel_s, t_size, f_n, svm_c, '{}_negative'.format(t), out_p)
-            ud_r = anova_svm(df_fa, ss1, kernel_s, t_size, f_n, svm_c, '{}_p_and_n'.format(t), out_p)
+            up_r, roc_p = anova_svm(df_fp, ss1, kernel_s, t_size, f_n, svm_c, '{}_positive'.format(t), out_p)
+            dn_r, roc_n = anova_svm(df_fm, ss1, kernel_s, t_size, f_n, svm_c, '{}_negative'.format(t), out_p)
+            ud_r, roc_a = anova_svm(df_fa, ss1, kernel_s, t_size, f_n, svm_c, '{}_p_and_n'.format(t), out_p)
+
             out_f.write('cor >= {}\t{}\t{}\n{}\n'.format(c_t, len(p2gp.get(t)), ','.join(p2gp.get(t)), up_r))
             out_f.write('cor <= -{}\t{}\t{}\n{}\n'.format(c_t, len(p2gm.get(t)), ','.join(p2gm.get(t)), dn_r))
             out_f.write('cor+-{}\t{}\n{}\n'.format(c_t, len(p2gp.get(t)) + len(p2gm.get(t)), ud_r))
+            out_f2.write('\n'.join([roc_p, roc_n, roc_a]) + '\n')
 
 
 def main(argv=None):
@@ -357,15 +377,18 @@ def main(argv=None):
 
         if argv.command == 'mv':
             print('Using Major Voting')
-            o_p = 'roc_{}_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}_dir'.\
+            o_p = 'roc_{}_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}_mv'.\
                 format(i, argv.mean + root_f, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number, argv.cv)
             prepare_output_dir(o_p)
             rice_mv(df_f, df_t, argv.top, argv.cor, c_path, o_p, argv.test_size,
                     argv.f_number, argv.cv, i, argv.cor_t)
         elif argv.command == 'svm':
             print('Using leave one out cross validation SVM')
-            o_p = 'roc_{}_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}_dir'. \
-                format(i, argv.mean + root_f, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number, argv.cv)
+            o_p = 'roc_{}_{}_ct{}_top{}_cor{}_test_f{}_svm'. \
+                format(i, argv.mean + root_f, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number)
+            prepare_output_dir(o_p)
+            svm_sys(df_f, df_t, argv.top, argv.cor, c_path, o_p, argv.test_size,
+                    argv.f_number, argv.penalty, argv.kernel, i, argv.cor_t)
         else:
             raise Usage('No command!!\nMust input mv or svm!')
     print('Done.')
