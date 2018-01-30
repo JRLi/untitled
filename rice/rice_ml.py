@@ -335,6 +335,7 @@ def svm_sys(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, svm_c, kernel_
         out_f.write('[loosv svm]\ncor_threshold:\t{}\ntop_target:\t{}\n\n'.format(c_t, top_n))
         for t in df_t.columns:
             out_f.write('{}\n'.format(t))
+            plot_top(df_t[t], ct, top_n, t, out_p)
             ss1 = s_top_gt(df_t[t], top_n, True)
             out_f.write('low_rice\t{}\t{}\nhigh_rice\t{}\t{}\n'.
                         format(len(ss1[ss1 == 0]), ','.join(ss1[ss1 == 0].index.tolist()), len(ss1[ss1 == 1]),
