@@ -385,7 +385,7 @@ def main(argv=None):
                     argv.f_number, argv.cv, i, argv.cor_t)
         elif argv.command == 'svm':
             print('Using leave one out cross validation SVM')
-            o_p = 'roc_{}_{}_ct{}_top{}_cor{}_test_f{}_svm'. \
+            o_p = 'roc_{}_{}_ct{}_top{}_cor{}_test{}_f{}_svm'. \
                 format(i, argv.mean + root_f, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number)
             prepare_output_dir(o_p)
             svm_sys(df_f, df_t, argv.top, argv.cor, c_path, o_p, argv.test_size,
