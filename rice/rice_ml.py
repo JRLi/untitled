@@ -214,7 +214,7 @@ def anova_svm(df_in, ss_label, k_type, ts, f_n, svm_c, title_n, out_path):
     x_train, x_test, y_train, y_test = train_test_split(x, ss_label, test_size=ts, random_state=1)
 
     anova_filter = SelectKBest(f_regression)
-    clf = svm.SVC(kernel=k_type)
+    clf = svm.SVC(kernel=k_type, probability=True)
     an_sv = Pipeline([('anova', anova_filter), ('svc', clf)])
     an_sv.set_params(anova__k=fn, svc__C=svm_c).fit(x_train, y_train)
     y_score = an_sv.decision_function(x_test)
@@ -237,7 +237,7 @@ def anova_svm(df_in, ss_label, k_type, ts, f_n, svm_c, title_n, out_path):
     plt.savefig(os.path.join(out_path, fn))
     plt.gcf().clear()
 
-    y_pre = an_sv.fit(x_train, y_train).predict_proba(x_test)[:, 1]
+    y_pre = an_sv.predict_proba(x_test)[:, 1]
     fpr, tpr, thresholds = roc_curve(y_true=y_test, y_score=y_pre)
     roc_auc = auc(x=fpr, y=tpr)
     lf = title_n.split('_', 1)
@@ -360,6 +360,7 @@ def main(argv=None):
         prefix_f = 'nm_df129_' if argv.mean == 'n' else 'wm_df129_'
         root_f = argv.normalization
         r_file = prefix_f + root_f + '_i.csv' if argv.imputation else prefix_f + root_f + '.csv'
+
         df, df_b = open_df(r_file)
         df.drop(['type (H)', 'waxy (H)'], axis=1, inplace=True)
 
