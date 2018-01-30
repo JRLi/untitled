@@ -173,8 +173,8 @@ def plot_top(series_input, top_cor, top_ml, s_title, out_path):
     ap.axhline(y=sc[0], color='g', linestyle='--', label=cl_t)
     ap.axhline(y=sc[-1], color='g', linestyle='--', label=cl_b)
     if top_cor != top_ml:
-        ml_t = 'learning_top_{}: {}'.format(top_cor, sm[0])
-        ml_b = 'learning_bottom_{}: {}'.format(top_cor, sm[-1])
+        ml_t = 'learning_top_{}: {}'.format(top_ml, sm[0])
+        ml_b = 'learning_bottom_{}: {}'.format(top_ml, sm[-1])
         ap.axhline(y=sm[0], color='r', linestyle='--', label=ml_t)
         ap.axhline(y=sm[-1], color='r', linestyle='--', label=ml_b)
     ap.legend(loc='lower right')
@@ -384,7 +384,7 @@ def main(argv=None):
             rice_mv(df_f, df_t, argv.top, argv.cor, c_path, o_p, argv.test_size,
                     argv.f_number, argv.cv, i, argv.cor_t)
         elif argv.command == 'svm':
-            print('Using leave one out cross validation SVM')
+            print('Using Anova SVM')
             o_p = 'roc_{}_{}_ct{}_top{}_cor{}_test{}_f{}_svm'. \
                 format(i, argv.mean + root_f, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number)
             prepare_output_dir(o_p)
