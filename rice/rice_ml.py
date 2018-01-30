@@ -224,7 +224,7 @@ def anova_svm(df_in, ss_label, k_type, ts, f_n, svm_c, title_n, out_path):
     mask = an_sv.named_steps.anova.get_support()
     m_mir_list = df_in.columns[mask]
     f_list = ','.join(m_mir_list)
-    tmp1 = '{}\t{}'.format(len(f_list), ','.join(f_list))
+    tmp1 = '{}\t{}'.format(len(m_mir_list), f_list)
 
     plt.step(recall, precision, color='b', alpha=0.2, where='post')
     plt.fill_between(recall, precision, step='post', alpha=0.2, color='b')
@@ -241,7 +241,7 @@ def anova_svm(df_in, ss_label, k_type, ts, f_n, svm_c, title_n, out_path):
     fpr, tpr, thresholds = roc_curve(y_true=y_test, y_score=y_pre)
     roc_auc = auc(x=fpr, y=tpr)
     lf = title_n.split('_', 1)
-    tmp2 = '{}\t{}\tROC AUC\t{:.2f}'.format(lf[0], lf[1], roc_auc)
+    tmp2 = '{}\t{}\t{:.2f}'.format(lf[0], lf[1], roc_auc)
     plt.plot(fpr, tpr, color='b', linestyle='-', label='{} (auc = {:.2f})'.format(title_n, roc_auc))
     plt.legend(loc='lower right')
     plt.plot([0, 1], [0, 1], linestyle='--', color='gray', linewidth=2)
@@ -331,10 +331,11 @@ def svm_sys(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, svm_c, kernel_
     p2gp, p2gm = cor_dict_get(path_c, c_t)
     with open('sb_{}_ct{}_top{}_cor{}_test{}_f{}'.format(des, ct, top_n, c_t, t_size, f_n), 'w') as out_f, \
             open('sf_{}_ct{}_top{}_cor{}_test{}_f{}'.format(des, ct, top_n, c_t, t_size, f_n), 'w') as out_f2:
-        out_f.write('features_shape:\t{}\ntarget_shape:\t{}\n'.format(df_fi.shape, df_ti.shape))
-        out_f.write('[loosv svm]\ncor_threshold:\t{}\ntop_target:\t{}\n\n'.format(c_t, top_n))
+        out_f2.write('Phenotype\tmir_cor_type\tROC_AUC\n')
         for t in df_t.columns:
             out_f.write('{}\n'.format(t))
+            out_f.write('positive_cor_mir\t{}\nnegative_cor_mir\t{}\np_and_n_cor_mir\t{}\n'.
+                        format(len(p2gp.get(t)), len(p2gm.get(t)), len(p2gp.get(t)) + len(p2gm.get(t))))
             plot_top(df_t[t], ct, top_n, t, out_p)
             ss1 = s_top_gt(df_t[t], top_n, True)
             out_f.write('low_rice\t{}\t{}\nhigh_rice\t{}\t{}\n'.
@@ -348,9 +349,7 @@ def svm_sys(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, svm_c, kernel_
             dn_r, roc_n = anova_svm(df_fm, ss1, kernel_s, t_size, f_n, svm_c, '{}_negative'.format(t), out_p)
             ud_r, roc_a = anova_svm(df_fa, ss1, kernel_s, t_size, f_n, svm_c, '{}_p_and_n'.format(t), out_p)
 
-            out_f.write('cor >= {}\t{}\t{}\n{}\n'.format(c_t, len(p2gp.get(t)), ','.join(p2gp.get(t)), up_r))
-            out_f.write('cor <= -{}\t{}\t{}\n{}\n'.format(c_t, len(p2gm.get(t)), ','.join(p2gm.get(t)), dn_r))
-            out_f.write('cor+-{}\t{}\n{}\n'.format(c_t, len(p2gp.get(t)) + len(p2gm.get(t)), ud_r))
+            out_f.write('Positive_cor\t{}\nNegative_cor\t{}\nP_and_N_cor\t{}\n\n'.format(up_r, dn_r, ud_r))
             out_f2.write('\n'.join([roc_p, roc_n, roc_a]) + '\n')
 
 
