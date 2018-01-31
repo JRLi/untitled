@@ -200,10 +200,10 @@ def select_r(df_in, ss_label, f_n, eps):
         mask = select.get_support()
         x_rfe = select.transform(df_in)
         m_mir_list = df_in.columns[mask]
-        return x_rfe, ','.join(m_mir_list)
+        return x_rfe, ','.join(m_mir_list), len(m_mir_list)
     else:
         f_list = df_in.columns.tolist()
-        return df_in.values, ','.join(f_list)
+        return df_in.values, ','.join(f_list), len(f_list)
 
 
 def anova_svm(df_in, ss_label, k_type, ts, f_n, svm_c, title_n, out_path):
@@ -259,8 +259,8 @@ def anova_svm(df_in, ss_label, k_type, ts, f_n, svm_c, title_n, out_path):
 
 def mvc(df_x, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     x = df_x.copy()
-    x, feature_string = select_r(x, ss_y, f_number, eps)
-    tmp1 = '{}\t{}'.format(f_number, feature_string)
+    x, feature_string, f_l = select_r(x, ss_y, f_number, eps)
+    tmp1 = '{}\t{}'.format(f_l, feature_string)
     x_train, x_test, y_train, y_test = train_test_split(x, ss_y, test_size=ts, random_state=1)
     colors = ['black', 'orange', 'blue', 'green']
     lines = [':', '--', '-.', '-']
