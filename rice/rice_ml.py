@@ -277,12 +277,12 @@ def mvc(df_x, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     for clf, label, clr, ls in zip(all_clf, clf_labels, colors, lines):
         scores = cross_val_score(estimator=clf, X=x_train, y=y_train, cv=cv, scoring='roc_auc')
         lf = title_n.split('_', 1)
-        tmp2_list.append('{}\t{}\tROC AUC [{}]\t{:.2f}\t+/- {:.2f}'.
-                         format(lf[0], lf[1], label, scores.mean(), scores.std()))
         y_pre = clf.fit(x_train, y_train).predict_proba(x_test)[:, 1]
         fpr, tpr, thresholds = roc_curve(y_true=y_test, y_score=y_pre)
         roc_auc = auc(x=fpr, y=tpr)
         plt.plot(fpr, tpr, color=clr, linestyle=ls, label='{} (auc = {:.2f})'.format(label, roc_auc))
+        tmp2_list.append('{}\t{}\tROC AUC [{}]\t{:.2f}\t+/- {:.2f}\t{:.2f}'.
+                         format(lf[0], lf[1], label, scores.mean(), scores.std(), roc_auc))
     tmp2 = '\n'.join(tmp2_list)
     plt.legend(loc='lower right')
     plt.plot([0, 1], [0, 1], linestyle='--', color='gray', linewidth=2)
@@ -304,7 +304,7 @@ def rice_mv(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, c_v, des, ct):
     p2gp, p2gm = cor_dict_get(path_c, c_t)
     with open('mb_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}'.format(des, ct, top_n, c_t, t_size, f_n, c_v), 'w') as out_f, \
             open('mf_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}'.format(des, ct, top_n, c_t, t_size, f_n, c_v), 'w') as out_f2:
-        out_f2.write('Phenotype\tmir_cor_type\troc_method\t{}_fold_cv_auc\t{}_fold_cv_std\n'.format(c_v, c_v))
+        out_f2.write('Phenotype\tmir_cor_type\troc_method\t{}_fold_cv_auc\t{}_fold_cv_std\troc_test\n'.format(c_v, c_v))
         for t in df_t.columns:
             out_f.write(t + '\n')
             out_f.write('positive_cor_mir\t{}\nnegative_cor_mir\t{}\np_and_n_cor_mir\t{}\n'.
