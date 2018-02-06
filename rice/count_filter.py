@@ -53,12 +53,12 @@ def d_filter(df_in, sum_ss, number):
 
 def phenotype_concat(df_in, f_name):
     df_p, p_path, p_pre = df_open('E:/StringTemp/Project_Rice/phenotype.csv', 't')
-    df_p = df_p.add_suffix('p')
-    df_x = pd.concat([df_in, df_p], join='inner')
-    df_x.T.to_csv(os.path.join(p_path, '{}.csv'.format(f_name)))
-    arr_i = sk_imputation(df_x)
-    df_i = pd.DataFrame(arr_i, index=df_x.index, columns=df_x.columns)
-    df_i.T.to_csv(os.path.join(p_path, '{}_i.csv'.format(f_name)))
+    df_p = df_p.add_suffix('p')     # add suffix to column name
+    df_x = pd.concat([df_in, df_p], join='inner')   # concat df in list
+    df_x.T.to_csv(os.path.join(p_path, '{}.csv'.format(f_name)))    # need transpose
+    arr_i = sk_imputation(df_x)     # after imputation, is a np.array
+    df_i = pd.DataFrame(arr_i, index=df_x.index, columns=df_x.columns)  # so, have to add the index and columns
+    df_i.T.to_csv(os.path.join(p_path, '{}_i.csv'.format(f_name)))  # need transpose
 
 
 def main():
@@ -71,15 +71,16 @@ def main():
         df_np = d_filter(df_n, df_sum(df_n), i)
         print(df_wp.shape)
         print(df_np.shape)
-        if i == 50000:
-            df_w50k_rpm = rpm(df_wp)
-            df_n50k_rpm = rpm(df_np)
-            df_w50k_qn = quantileNormalize(df_wp)
-            df_n50k_qn = quantileNormalize(df_np)
-            phenotype_concat(df_w50k_rpm, 'wm_df50k_r')
-            phenotype_concat(df_n50k_rpm, 'nm_df50k_r')
-            phenotype_concat(df_w50k_qn, 'wm_df50k_q')
-            phenotype_concat(df_n50k_qn, 'nm_df50k_q')
+        if i in [50000, 100000]:
+            suf_k = 'k'.join(str(i).rsplit('000', 1))
+            df_w_rpm = rpm(df_wp)
+            df_n_rpm = rpm(df_np)
+            df_w_qn = quantileNormalize(df_wp)
+            df_n_qn = quantileNormalize(df_np)
+            phenotype_concat(df_w_rpm, 'wm_df{}_r'.format(suf_k))
+            phenotype_concat(df_n_rpm, 'nm_df{}_r'.format(suf_k))
+            phenotype_concat(df_w_qn, 'wm_df{}_q'.format(suf_k))
+            phenotype_concat(df_n_qn, 'nm_df{}_q'.format(suf_k))
 
 
 if __name__ == '__main__':
