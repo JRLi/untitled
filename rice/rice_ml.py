@@ -49,7 +49,7 @@ def args_parse():
     subparsers = parser.add_subparsers(help='choice machine learning method', dest='command')
     parser_a = subparsers.add_parser('mv', help='method is Major voting')
     parser_a.add_argument('-v', '--cv', type=int, default=10, help='-v fold cross validation, default is 10')
-    parser_b = subparsers.add_parser('svm', help='method is loocv SVM')
+    parser_b = subparsers.add_parser('svm', help='method is ANOVA linear SVM')
     parser_b.add_argument('-k', '--kernel', choices=['linear', 'poly', 'rbf', 'sigmoid'], default='linear',
                           help='Specifies the kernel type to be used in the algorithm, default is linear')
     parser_b.add_argument('-p', '--penalty', type=float, default=1.0, help='Penalty of the error term, default is 1.0')
@@ -265,8 +265,8 @@ def mvc(df_x, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     colors = ['black', 'orange', 'blue', 'green']
     lines = [':', '--', '-.', '-']
     clf1 = LogisticRegression(penalty='l2', C=0.001, random_state=0)
-    clf2 = DecisionTreeClassifier(max_depth=1, criterion='entropy', random_state=0)
-    clf3 = KNeighborsClassifier(n_neighbors=1, p=2, metric='minkowski')
+    clf2 = DecisionTreeClassifier(max_depth=3, criterion='entropy', random_state=0)
+    clf3 = KNeighborsClassifier(n_neighbors=5, p=2, metric='minkowski')
     pipe1 = Pipeline([['sc', StandardScaler()], ['clf', clf1]])
     pipe3 = Pipeline([['sc', StandardScaler()], ['clf', clf3]])
     mv_clf = VotingClassifier([('lr', pipe1), ('dt', clf2), ('knn', pipe3)], voting='soft')
