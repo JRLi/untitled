@@ -35,6 +35,8 @@ def args_parse():
     parser = argparse.ArgumentParser(description=use_message)
     parser.add_argument('-m', '--mean', choices=['w', 'n'], default='n',
                         help='exp with (w) or without (n) mean, default is n')
+    parser.add_argument('-r', '--read_t', choices=['a', 'f', 'h'], default='a',
+                        help='total raw exp threshold of rice, "a" is all, "f" is 50K, "h" is 100K, default is a')
     parser.add_argument('-n', '--normalization', choices=['q', 'r'], default='r',
                         help='expression normalization, r is rpm, q is quantile, default is r')
     parser.add_argument('-t', '--top', type=c_int, default=50, help='Top/down -t rice; if set 0 equal all, must '
@@ -302,18 +304,18 @@ def rice_mv(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, c_v, des, ct):
     df_t = df_ti.copy()
     df_f = df_fi.copy()
     p2gp, p2gm = cor_dict_get(path_c, c_t)
-    with open('mb_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}'.format(des, ct, top_n, c_t, t_size, f_n, c_v), 'w') as out_f, \
-            open('mf_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}'.format(des, ct, top_n, c_t, t_size, f_n, c_v), 'w') as out_f2:
-        out_f2.write('Phenotype\tmir_cor_type\troc_method\t{}_fold_cv_auc\t{}_fold_cv_std\troc_test\n'.format(c_v, c_v))
+    with open('mv_out/b_{}_ct{}_top{}_cor{}_t{}_f{}_cv{}'.format(des, ct, top_n, c_t, t_size, f_n, c_v), 'w') as of1, \
+            open('mv_out/f_{}_ct{}_top{}_cor{}_t{}_f{}_cv{}'.format(des, ct, top_n, c_t, t_size, f_n, c_v), 'w') as of2:
+        of2.write('Phenotype\tmir_cor_type\troc_method\t{}_fold_cv_auc\t{}_fold_cv_std\troc_test\n'.format(c_v, c_v))
         for t in df_t.columns:
-            out_f.write(t + '\n')
-            out_f.write('positive_cor_mir\t{}\nnegative_cor_mir\t{}\np_and_n_cor_mir\t{}\n'.
-                        format(len(p2gp.get(t)), len(p2gm.get(t)), len(p2gp.get(t)) + len(p2gm.get(t))))
+            of1.write(t + '\n')
+            of1.write('positive_cor_mir\t{}\nnegative_cor_mir\t{}\np_and_n_cor_mir\t{}\n'
+                      .format(len(p2gp.get(t)), len(p2gm.get(t)), len(p2gp.get(t)) + len(p2gm.get(t))))
             plot_top(df_t[t], ct, top_n, t, out_p)
             ss1 = s_top_gt(df_t[t], top_n, True)
-            out_f.write('low_rice\t{}\t{}\nhigh_rice\t{}\t{}\n'.
-                        format(len(ss1[ss1 == 0]), ','.join(ss1[ss1 == 0].index.tolist()), len(ss1[ss1 == 1]),
-                               ','.join(ss1[ss1 == 1].index.tolist())))
+            of1.write('low_rice\t{}\t{}\nhigh_rice\t{}\t{}\n'
+                      .format(len(ss1[ss1 == 0]), ','.join(ss1[ss1 == 0].index.tolist()), len(ss1[ss1 == 1]), ','.
+                              join(ss1[ss1 == 1].index.tolist())))
             df_fp = df_f.loc[ss1.index, p2gp.get(t)]
             df_fm = df_f.loc[ss1.index, p2gm.get(t)]
             df_fa = pd.concat([df_fp, df_fm], 1)
@@ -321,26 +323,26 @@ def rice_mv(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, c_v, des, ct):
             mir_p, roc_p = mvc(df_fp, ss1, '{}_positive'.format(t), out_p, t_size, f_n, 300, c_v)
             mir_n, roc_n = mvc(df_fm, ss1, '{}_negative'.format(t), out_p, t_size, f_n, 300, c_v)
             mir_a, roc_a = mvc(df_fa, ss1, '{}_p_and_n'.format(t), out_p, t_size, f_n, 300, c_v)
-            out_f.write('Positive_cor\t{}\nNegative_cor\t{}\nP_and_N_cor\t{}\n\n'.format(mir_p, mir_n, mir_a))
-            out_f2.write('\n'.join([roc_p, roc_n, roc_a]) + '\n')
+            of1.write('Positive_cor\t{}\nNegative_cor\t{}\nP_and_N_cor\t{}\n\n'.format(mir_p, mir_n, mir_a))
+            of2.write('\n'.join([roc_p, roc_n, roc_a]) + '\n')
 
 
 def svm_sys(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, svm_c, kernel_s, des, ct):
     df_t = df_ti.copy()
     df_f = df_fi.copy()
     p2gp, p2gm = cor_dict_get(path_c, c_t)
-    with open('sb_{}_ct{}_top{}_cor{}_test{}_f{}'.format(des, ct, top_n, c_t, t_size, f_n), 'w') as out_f, \
-            open('sf_{}_ct{}_top{}_cor{}_test{}_f{}'.format(des, ct, top_n, c_t, t_size, f_n), 'w') as out_f2:
-        out_f2.write('Phenotype\tmir_cor_type\tROC_AUC\n')
+    with open('svm_out/b_{}_ct{}_top{}_cor{}_test{}_f{}'.format(des, ct, top_n, c_t, t_size, f_n), 'w') as of1, \
+            open('svm_out/f_{}_ct{}_top{}_cor{}_test{}_f{}'.format(des, ct, top_n, c_t, t_size, f_n), 'w') as of2:
+        of2.write('Phenotype\tmir_cor_type\tROC_AUC\n')
         for t in df_t.columns:
-            out_f.write('{}\n'.format(t))
-            out_f.write('positive_cor_mir\t{}\nnegative_cor_mir\t{}\np_and_n_cor_mir\t{}\n'.
-                        format(len(p2gp.get(t)), len(p2gm.get(t)), len(p2gp.get(t)) + len(p2gm.get(t))))
+            of1.write('{}\n'.format(t))
+            of1.write('positive_cor_mir\t{}\nnegative_cor_mir\t{}\np_and_n_cor_mir\t{}\n'
+                      .format(len(p2gp.get(t)), len(p2gm.get(t)), len(p2gp.get(t)) + len(p2gm.get(t))))
             plot_top(df_t[t], ct, top_n, t, out_p)
             ss1 = s_top_gt(df_t[t], top_n, True)
-            out_f.write('low_rice\t{}\t{}\nhigh_rice\t{}\t{}\n'.
-                        format(len(ss1[ss1 == 0]), ','.join(ss1[ss1 == 0].index.tolist()), len(ss1[ss1 == 1]),
-                               ','.join(ss1[ss1 == 1].index.tolist())))
+            of1.write('low_rice\t{}\t{}\nhigh_rice\t{}\t{}\n'
+                      .format(len(ss1[ss1 == 0]), ','.join(ss1[ss1 == 0].index.tolist()), len(ss1[ss1 == 1]), ','
+                              .join(ss1[ss1 == 1].index.tolist())))
             df_fp = df_f.loc[ss1.index, p2gp.get(t)]
             df_fm = df_f.loc[ss1.index, p2gm.get(t)]
             df_fa = pd.concat([df_fp, df_fm], 1)
@@ -349,17 +351,21 @@ def svm_sys(df_fi, df_ti, top_n, c_t, path_c, out_p, t_size, f_n, svm_c, kernel_
             dn_r, roc_n = anova_svm(df_fm, ss1, kernel_s, t_size, f_n, svm_c, '{}_negative'.format(t), out_p)
             ud_r, roc_a = anova_svm(df_fa, ss1, kernel_s, t_size, f_n, svm_c, '{}_p_and_n'.format(t), out_p)
 
-            out_f.write('Positive_cor\t{}\nNegative_cor\t{}\nP_and_N_cor\t{}\n\n'.format(up_r, dn_r, ud_r))
-            out_f2.write('\n'.join([roc_p, roc_n, roc_a]) + '\n')
+            of1.write('Positive_cor\t{}\nNegative_cor\t{}\nP_and_N_cor\t{}\n\n'.format(up_r, dn_r, ud_r))
+            of2.write('\n'.join([roc_p, roc_n, roc_a]) + '\n')
 
 
 def main(argv=None):
     if argv is None:
         argv = args_parse()
         prepare_output_dir('cor_file')
-        prefix_f = 'nm_df129_' if argv.mean == 'n' else 'wm_df129_'
-        root_f = argv.normalization
-        r_file = prefix_f + root_f + '_i.csv' if argv.imputation else prefix_f + root_f + '.csv'
+        prefix_f = 'nm' if argv.mean == 'n' else 'wm'
+        root_f = 'all' if argv.read_t == 'a' else '50k' if argv.read_t == 'f' else '100k'
+        suffix_f = argv.normalization
+        extension_f = '_i.csv' if argv.imputation else '.csv'
+        r_file = '_'.join([prefix_f, root_f, suffix_f]) + extension_f
+        info = prefix_f + root_f + suffix_f + '_i' if argv.imputation else prefix_f + root_f + suffix_f + '_dp'
+        print('\t[File]: {}'.format(r_file))
 
         df, df_b = open_df(r_file)
         df.drop(['type (H)', 'waxy (H)'], axis=1, inplace=True)
@@ -367,7 +373,7 @@ def main(argv=None):
         if not argv.imputation:
             print('No imputation, drop all NA')
             df = df.dropna()
-        i = argv.mean + root_f + '_imputation' if argv.imputation else argv.mean + root_f + '_drop_na'
+
         df_t = df.iloc[:, 924:]
         df_f = df.iloc[:, :924]
         c_path = os.path.join('cor_file', 'cor_t{}.csv'.format(argv.cor_t))
@@ -378,18 +384,20 @@ def main(argv=None):
 
         if argv.command == 'mv':
             print('Using Major Voting')
-            o_p = 'roc_{}_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}_mv'.\
-                format(i, argv.mean + root_f, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number, argv.cv)
+            prepare_output_dir('mv_out')
+            o_p = 'mv_out/roc_{}_ct{}_top{}_cor{}_test{}_f{}_cv{}_mv'.\
+                format(info, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number, argv.cv)
             prepare_output_dir(o_p)
             rice_mv(df_f, df_t, argv.top, argv.cor, c_path, o_p, argv.test_size,
-                    argv.f_number, argv.cv, i, argv.cor_t)
+                    argv.f_number, argv.cv, info, argv.cor_t)
         elif argv.command == 'svm':
             print('Using Anova SVM')
-            o_p = 'roc_{}_{}_ct{}_top{}_cor{}_test{}_f{}_svm'. \
-                format(i, argv.mean + root_f, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number)
+            prepare_output_dir('svm_out')
+            o_p = 'svm_out/roc_{}_ct{}_top{}_cor{}_test{}_f{}_svm'. \
+                format(info, argv.cor_t, argv.top, argv.cor, argv.test_size, argv.f_number)
             prepare_output_dir(o_p)
             svm_sys(df_f, df_t, argv.top, argv.cor, c_path, o_p, argv.test_size,
-                    argv.f_number, argv.penalty, argv.kernel, i, argv.cor_t)
+                    argv.f_number, argv.penalty, argv.kernel, info, argv.cor_t)
         else:
             raise Usage('No command!!\nMust input mv or svm!')
     print('Done.')
