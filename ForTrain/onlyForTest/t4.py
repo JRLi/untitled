@@ -31,6 +31,7 @@ def open_df(in_path, direct='n'):
         df = df.transpose()
     return df, fbase
 
+
 def scipy_corr(s1, s2, corr_mode):
     ixs = s1.index.intersection(s2.index)
     if corr_mode == 'pearson':
@@ -114,11 +115,39 @@ print(df1.corr())
 #plt.matshow(df1.corr())
 #plt.show()
 import seaborn as sns; sns.set(color_codes=True)
-
 ax = sns.regplot(x='g1028', y='hsa-mir-9-2', data=df1)
-plt.show()
+#plt.show()
 
 list1 = [2, 12, 8, 0, 9]
 list1.sort()
 print(list1)
 print(list1[0], list1[-1])
+
+from sklearn import datasets
+iris = datasets.load_iris()
+df = pd.DataFrame(iris.data, columns=iris.feature_names)
+print(df.head())
+
+df1, b1 = open_df('D:/Project/orchid/all_new/test/t1.csv')
+df2, b2 = open_df('D:/Project/orchid/all_new/test/t2.csv')
+df3, b3 = open_df('D:/Project/orchid/all_new/test/t3.csv')
+print(df1.ix[:, :1])    # get DF
+print(df1.ix[:, 0])     # get Series
+
+rdf = pd.concat([df1.ix[:, :1], df2.ix[:, :1], df3.ix[:, :1]], axis=1)
+rdf2 = df1.ix[:, :1] + df2.ix[:, :1] + df3.ix[:, :1]
+
+print(rdf)
+print(rdf2)     # !!!!!!!!!not same with concat
+rdf = rdf.fillna(0)
+print(rdf)
+
+
+import secrets
+list1 = ['aaa', 'bbb', 'ccc']
+print(secrets.choice(list1))
+
+print(df1.T)
+print(df2.T)
+df3 = pd.concat([df1.T, df2.T], join='inner')
+print(df3)
