@@ -27,6 +27,8 @@ from sklearn.linear_model import LogisticRegression
 use_message = '''
     Need Python3 and numpy, pandas, scipy, and sklearn; or Anaconda.
     Use 129 rices (113 rices if drop na) * 924 miRNAs and 17 phenotypes for machine learning.
+    ps. 114 rices read counts > 50k (99 rices if drop na)
+         88 rices read counts > 100k (76 rices if drop na)
     Example: python -u rice_ml.py -t 50 -ct 40 -c 0.1 -i mv -v 10 -s 0.4 -f 15
 '''
 
