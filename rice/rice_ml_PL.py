@@ -242,7 +242,7 @@ def pn(df_mir, df_phe, r_p):
         df_c, df_p = rice_corr(dfm, dfp, 50, 'pearson')
         extract_rc(c_path, df_c, locate(df_c, 'c', 0.01), 'correlation')
         extract_rc(c_path.replace('cor', 'pvl'), df_p, locate(df_c, 'p', 1), 'p_value')
-    p2gp, p2gm = cor_dict_get(c_path, 0.1)
+    p2gp, p2gm = cor_dict_get(c_path, 0.15)
     ss1 = s_top_gt(ssp, 45, True)
     df_mp = dfm2.loc[ss1.index, p2gp.get('Panicle Number (I)')]
     df_mm = dfm2.loc[ss1.index, p2gm.get('Panicle Number (I)')]
@@ -258,6 +258,7 @@ def pn(df_mir, df_phe, r_p):
 
 def main():
     dfr, r_p, n_p = df_open('E:/StringTemp/Project_Rice/wm_df129_q.csv')
+    dfr = dfr.dropna()
     dfm = dfr.iloc[:, :924]
     dfp = dfr.iloc[:, 924:]
     dfp = dfp.drop(['type (H)', 'waxy (H)'], axis=1)
