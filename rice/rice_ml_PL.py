@@ -25,7 +25,7 @@ def df_open(path_in, direct='n'):
     df1 = pd.read_csv(path_in, index_col=0) if n_s == '.csv' else pd.read_table(path_in, index_col=0)
     if direct != 'n':
         df1 = df1.transpose()
-    return df1, f_p, n_p
+    return df1, n_p
 
 
 def rice_corr(df_mir, df_tar, top=0, cor='pearson'):
@@ -113,7 +113,6 @@ def select_r(df_in, ss_label, f_n, eps):
 
 def fn_check_plot(df_in, path_o, title_n):
     df1 = df_in.copy()
-    print(df1)
     for t in ['Logistic Regression', 'Majority Voting']:
         lines = [':', '-.', '--']
         colors = ['green', 'blue', 'orange']
@@ -134,8 +133,9 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     df_x = df_xi.copy()
     fn_list, l_cvc_list, l_cvu_list, l_roc_list, m_cvc_list, m_cvu_list, m_roc_list = [], [], [], [], [], [], []
     tmp1_list, tmp2_list = [], []
+    print('Now running F_number:')
     for fn in range(1, f_number + 1):
-        print('Now running F_number: {}'.format(fn))
+        print(fn, end=',')
         fn_list.append(fn)
         x, feature_string, f_l = select_r(df_x, ss_y, fn, eps)
         tmp1_list.append('{}\t{}\t{}'.format(fn, f_l, feature_string))
@@ -167,6 +167,7 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 m_cvc_list.append(cv_acc.mean())
                 m_cvu_list.append(cv_roc.mean())
                 m_roc_list.append(roc_auc)
+    print()
     df_s = pd.DataFrame()
     df_s['mir_number'] = pd.Series(fn_list)
     df_s['lr_cv10_acc'] = pd.Series(l_cvc_list)
@@ -179,9 +180,9 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     return '\n'.join(tmp1_list), '\n'.join(tmp2_list)
 
 
-def pn_summary(ssp2, path_o):
+def pn_summary(ssp2, path_o, suf):
     ssp = ssp2.copy()
-    with open(os.path.join(path_o, 'top_summary_for_PNI'), 'w') as of1:
+    with open(os.path.join(path_o, 'top_summary_{}'.format(suf)), 'w') as of1:
         of1.write('TopN\tLowN\tHighN\tLowRange\tHighRange\n')
         for tn in [0, 60, 55, 50, 45, 40]:
             ssp_t = s_top_gt(ssp, tn, True)
@@ -194,7 +195,7 @@ def pn_summary(ssp2, path_o):
             of1.write('{} ~ {}\t{} ~ {}\n'.format(ss_l[0], ss_l[-1], ss_h[0], ss_h[-1]))
 
 
-def plot_tt(dfm_in, ssp_in, ssp, path_o, rs):
+def plot_tt(dfm_in, ssp_in, ssp, path_o, phe, suf, rs=0):
     dfm2 = dfm_in.copy()
     ssp2 = ssp_in.copy()
     x_train, x_test, y_train, y_test = train_test_split(dfm2, ssp2, test_size=0.4, random_state=rs)
@@ -206,7 +207,7 @@ def plot_tt(dfm_in, ssp_in, ssp, path_o, rs):
     ss_test.plot(color='b', linestyle='-.', label='test')
     ap.axhline(y=ssp.mean(), color='r', linestyle='--', label='mean')
     plt.legend(loc='lower right')
-    plt.savefig(os.path.join(path_o, 'Panicle_number_rs{}_1'.format(rs)))
+    plt.savefig(os.path.join(path_o, '{}_{}_rs{}_1'.format(phe, suf, rs)))
     plt.gcf().clear()
     s_raw = pd.concat([ss_train, ss_test])
     s_raw.sort_values(inplace=True)
@@ -224,45 +225,59 @@ def plot_tt(dfm_in, ssp_in, ssp, path_o, rs):
     df_test.plot(kind='scatter', x='index', y='raw', color='r', label='test', ax=ax)
     plt.grid()
     plt.xlabel('rice sample index')
-    plt.ylabel('Panicle number')
-    plt.savefig(os.path.join(path_o, 'Panicle_number_rs{}_2'.format(rs)))
+    plt.ylabel(phe)
+    plt.savefig(os.path.join(path_o, '{}_{}_rs{}_2'.format(phe, suf, rs)))
     plt.gcf().clear()
 
 
-def pn(df_mir, df_phe, r_p):
+def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th):
     dfm = df_mir.copy()
     dfp = df_phe.copy()
-    ssp = dfp['Panicle Number (I)']
-    print(sum(ssp.isnull()))
+    ssp = dfp[phenotype]
+    print('{}_{}:'.format(f_prefix, na_suffix), sum(ssp.isnull()), dfm.shape, dfp.shape)
     ssp = ssp.dropna()
     dfm2 = dfm.loc[ssp.index, :]
-    pn_summary(ssp, r_p)
-    c_path = 'E:/StringTemp/Project_Rice/wm_df129_q_corT{}.csv'.format(50)
+    phe_m = phenotype.replace('(', '').replace(')', '').replace(' ', '_')
+    pn_summary(ssp, r_p, '{}_{}_{}'.format(phe_m, f_prefix, na_suffix))
+
+    c_path = 'E:/StringTemp/Project_Rice/{}_corT{}.csv'.format(f_prefix, top_cn)
     if not os.path.exists(c_path):
-        df_c, df_p = rice_corr(dfm, dfp, 50, 'pearson')
+        df_c, df_p = rice_corr(dfm, dfp, top_cn, 'pearson')
         extract_rc(c_path, df_c, locate(df_c, 'c', 0.01), 'correlation')
         extract_rc(c_path.replace('cor', 'pvl'), df_p, locate(df_c, 'p', 1), 'p_value')
-    p2gp, p2gm = cor_dict_get(c_path, 0.15)
-    ss1 = s_top_gt(ssp, 45, True)
-    df_mp = dfm2.loc[ss1.index, p2gp.get('Panicle Number (I)')]
-    df_mm = dfm2.loc[ss1.index, p2gm.get('Panicle Number (I)')]
+    ss1 = s_top_gt(ssp, top_n, True)
+    p2gp, p2gm = cor_dict_get(c_path, c_th)
+    df_mp = dfm2.loc[ss1.index, p2gp.get(phenotype)]
+    df_mm = dfm2.loc[ss1.index, p2gm.get(phenotype)]
     df_ma = pd.concat([df_mp, df_mm], 1)
     print(df_mp.shape, df_mm.shape, df_ma.shape)
-    plot_tt(df_mp, ss1, ssp, r_p, 1)   # check top 50 sample split into training and test
-    #mir_p, roc_p = mvc(df_mp, ss1, '{}_positive'.format('Panicle Number (I)'), r_p, 0.4, 30, 300, 10)
-    mir_m, roc_m = mvc(df_mm, ss1, '{}_negative'.format('Panicle Number (I)'), r_p, 0.4, 30, 300, 10)
-    with open(os.path.join(r_p, 'pn_mir'), 'w') as o1, open(os.path.join(r_p, 'pn_roc'), 'w') as o2:
-        o1.write(mir_m)
-        o2.write(roc_m)
+
+    plot_tt(df_mp, ss1, ssp, r_p, phe_m, '{}_{}'.format(f_prefix, na_suffix), 1)   # check top 50 sample split into training and test
+    mir_p, roc_p = mvc(df_mp, ss1, '{}_{}_{}_positive'.format(f_prefix, na_suffix, phenotype), r_p, 0.4, 30, 300, 10)
+    mir_m, roc_m = mvc(df_mm, ss1, '{}_{}_{}_negative'.format(f_prefix, na_suffix, phenotype), r_p, 0.4, 30, 300, 10)
+    mir_a, roc_a = mvc(df_ma, ss1, '{}_{}_{}_p_and_n'.format(f_prefix, na_suffix, phenotype), r_p, 0.4, 30, 300, 10)
+    for m, r, p in zip([mir_p, mir_m, mir_a], [roc_p, roc_m, roc_a], ['pos', 'neg', 'all']):
+        with open(os.path.join(r_p, '{}_{}_{}_{}_mir'.format(f_prefix, na_suffix, phe_m, p)), 'w') as o1, \
+                open(os.path.join(r_p, '{}_{}_{}_{}_roc'.format(f_prefix, na_suffix, phe_m, p)), 'w') as o2:
+            o1.write(m)
+            o2.write(r)
 
 
 def main():
-    dfr, r_p, n_p = df_open('E:/StringTemp/Project_Rice/wm_df129_q.csv')
-    dfr = dfr.dropna()
-    dfm = dfr.iloc[:, :924]
-    dfp = dfr.iloc[:, 924:]
-    dfp = dfp.drop(['type (H)', 'waxy (H)'], axis=1)
-    pn(dfm, dfp, r_p)
+    f_list = ['wm_df129_q.csv', 'wm_df50k_q.csv']
+    p_list = ['wmq', 'wm50kq']
+    r_p = 'E:/StringTemp/Project_Rice'
+    tp = 'Panicle Number (I)'
+    for f, p in zip(f_list, p_list):
+        dfr, n_p = df_open(os.path.join(r_p, f))
+        dfr = dfr.drop(['type (H)', 'waxy (H)'], axis=1)
+        dfr2 = dfr.dropna()
+        dfm = dfr.iloc[:, :924]
+        dfp = dfr.iloc[:, 924:]
+        dfm2 = dfr2.iloc[:, :924]
+        dfp2 = dfr2.iloc[:, 924:]
+        pn(dfm, dfp, r_p, tp, p, 'no_drop', 50, 45, 0.15)
+        pn(dfm2, dfp2, r_p, tp, p, 'drop', 50, 45, 0.15)
 
 
 if __name__ == '__main__':
