@@ -3,8 +3,10 @@ import pandas as pd
 import numpy as np
 import scipy.stats as st
 import os
+import math
 import matplotlib.pyplot as plt
 from collections import defaultdict
+from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -121,34 +123,6 @@ def select_r(df_in, ss_label, f_n, eps):
         return df_in.values, ','.join(f_list), len(f_list)
 
 
-def out_feature_plot(dfx, ssy, f_string, m2c, path_o, title_n, f_number):
-    f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
-    o_path = os.path.join(path_o, 'Features')
-    prepare_output_dir(o_path)
-    high_df = dfx[ssy == 1]
-    low_df = dfx[ssy == 0]
-    f_list = f_string.split(',')
-    fig, axes = plt.subplots(round(len(f_list) / 2), 2, figsize=(10, 20))
-    ax = axes.ravel()
-    with open(os.path.join(o_path, '{}_{}_cor'.format(f_name, f_number)), 'w') as out_c:
-        i = 0
-        for m in f_list:
-            out_c.write('{}\t{}\n'.format(m, m2c.get(m, 'No_result')))
-            _, bins = np.histogram(dfx[m], bins=50)
-            ax[i].hist(high_df[m], bins=bins, color='r', alpha=.5)
-            ax[i].hist(low_df[m], bins=bins, color='b', alpha=.5)
-            ax[i].set_title(m)
-            ax[i].set_yticks(())
-            i += 1
-        ax[0].set_xlabel('Feature magnitude')
-        ax[0].set_ylabel('Frequency')
-        ax[0].legend(['High', 'Low'], loc='best')
-        fig.tight_layout()
-        plt.suptitle(title_n)
-        plt.savefig(os.path.join(o_path, '{}_{}_mir'.format(f_name, f_number)))
-        plt.gcf().clear()
-
-
 def fn_check_plot(df_in, path_o, title_n):
     l_path = os.path.join(path_o, 'roc_lg')
     m_path = os.path.join(path_o, 'roc_mv')
@@ -180,10 +154,6 @@ def mvc(df_xi, ss_y, title_n, out_path, c_dict, ts, f_number, eps, df_cv):
         print(fn, end=',')
         fn_list.append(fn)
         x, feature_string, f_l = select_r(df_x, ss_y, fn, eps)
-
-        if title_n.endswith('negative') and f_l == 15:
-            out_feature_plot(df_x, ss_y, feature_string, c_dict, out_path, title_n, f_l)
-
         tmp1_list.append('{}\t{}\t{}'.format(fn, f_l, feature_string))
         x_train, x_test, y_train, y_test = train_test_split(x, ss_y, test_size=ts, random_state=1)
         clf1 = LogisticRegression(penalty='l2', C=0.001, random_state=0)
@@ -223,7 +193,7 @@ def mvc(df_xi, ss_y, title_n, out_path, c_dict, ts, f_number, eps, df_cv):
     df_s['mv_cv10_roc'] = pd.Series(m_cvu_list)
     df_s['mv_test_roc'] = pd.Series(m_roc_list)
     fn_check_plot(df_s, out_path, title_n)
-    return '\n'.join(tmp1_list), '\n'.join(tmp2_list)
+    return tmp1_list, '\n'.join(tmp2_list)
 
 
 def pn_summary(ssp2, path_o, suf):
@@ -286,7 +256,6 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th)
     ssp = dfp[phenotype]
     print('na sum:{}_{}:'.format(f_prefix, na_suffix), sum(ssp.isnull()), dfm.shape, dfp.shape)
     ssp = ssp.dropna()
-    dfm2 = dfm.loc[ssp.index, :]
     phe_m = phenotype.replace('(', '').replace(')', '').replace(' ', '_')
 
     pn_summary(ssp, r_dir, '{}_{}_{}'.format(phe_m, f_prefix, na_suffix))
@@ -298,8 +267,8 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th)
         extract_rc(c_path.replace('cor', 'pvl'), df_p, locate(df_c, 'p', 1), 'p_value')
     ss1 = s_top_gt(ssp, top_n, True)
     p2gp, p2gm, m2c = cor_dict_get(c_path, c_th)
-    df_mp = dfm2.loc[ss1.index, p2gp.get(phenotype)]
-    df_mm = dfm2.loc[ss1.index, p2gm.get(phenotype)]
+    df_mp = dfm.loc[ss1.index, p2gp.get(phenotype)]
+    df_mm = dfm.loc[ss1.index, p2gm.get(phenotype)]
     df_ma = pd.concat([df_mp, df_mm], 1)
     print(df_mp.shape, df_mm.shape, df_ma.shape)
     # check top 50 sample split into training and test
@@ -307,34 +276,86 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th)
 
     plot_tt(df_mp, ss1, ssp, r_dir, phe_m, c_px, 1)
 
-    mir_p, roc_p = mvc(df_mp, ss1, '{}_{}_positive'.format(c_px, phenotype), r_dir, m2c.get(phenotype), 0.4, 16, 300, 10)
-    mir_m, roc_m = mvc(df_mm, ss1, '{}_{}_negative'.format(c_px, phenotype), r_dir, m2c.get(phenotype), 0.4, 16, 300, 10)
-    mir_a, roc_a = mvc(df_ma, ss1, '{}_{}_p_and_n'.format(c_px, phenotype), r_dir, m2c.get(phenotype), 0.4, 16, 300, 10)
+    mir_p, roc_p = mvc(df_mp, ss1, '{}_{}_positive'.format(c_px, phenotype), r_dir, m2c.get(phenotype), 0.4, 30, 300, 10)
+    mir_m, roc_m = mvc(df_mm, ss1, '{}_{}_negative'.format(c_px, phenotype), r_dir, m2c.get(phenotype), 0.4, 30, 300, 10)
+    mir_a, roc_a = mvc(df_ma, ss1, '{}_{}_p_and_n'.format(c_px, phenotype), r_dir, m2c.get(phenotype), 0.4, 30, 300, 10)
     for m, r, p in zip([mir_p, mir_m, mir_a], [roc_p, roc_m, roc_a], ['pos', 'neg', 'all']):
         with open(os.path.join(r_dir, '{}_{}_{}_mir'.format(c_px, phe_m, p)), 'w') as o1, \
                 open(os.path.join(r_dir, '{}_{}_{}_roc'.format(c_px, phe_m, p)), 'w') as o2:
-            o1.write(m)
-            o2.write(r)
+            o1.write('\n'.join(m) + '\n')
+            o2.write(r + '\n')
+
+
+def out_feature_plot(dfx, ssy, f_string, m2c, path_o, title_n, f_number):
+    f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
+    o_path = os.path.join(path_o, 'Features')
+    prepare_output_dir(o_path)
+    high_df = dfx[ssy == 1]
+    low_df = dfx[ssy == 0]
+    f_list = f_string.split(',')
+    fig, axes = plt.subplots(math.ceil(f_number / 2), 2, figsize=(10, 2 * math.ceil(f_number / 2)))
+    ax = axes.ravel()
+    with open(os.path.join(o_path, '{}_{}_cor.csv'.format(f_name, f_number)), 'w') as out_c:
+        i = 0
+        for m in f_list:
+            out_c.write('{},{}\n'.format(m, m2c.get(m, 'No_result')))
+            _, bins = np.histogram(dfx[m], bins=50)
+            ax[i].hist(high_df[m], bins=bins, color='r', alpha=.5)
+            ax[i].hist(low_df[m], bins=bins, color='b', alpha=.5)
+            ax[i].set_title(m)
+            ax[i].set_yticks(())
+            i += 1
+        ax[1].set_xlabel('Feature magnitude')
+        ax[1].set_ylabel('Frequency')
+        ax[1].legend(['High', 'Low'], loc='best')
+        fig.tight_layout()
+        plt.suptitle(title_n)
+        plt.savefig(os.path.join(o_path, '{}_{}_mir'.format(f_name, f_number)))
+        #plt.gcf().clear()
+        plt.close()
+
+
+def linear_rg(dfx, ssy, f_string, path_o, title_n, f_number):
+    pass
 
 
 def main():
-    #f_list = ['wm_df129_q.csv', 'wm_df50k_q.csv']
-    #p_list = ['wmq', 'wm50kq']
-    f_list = ['wm_df129_q.csv']
-    p_list = ['wmq']
+    x = False
     main_dir = 'E:/StringTemp/Project_Rice'
     phenotype_list = ['Panicle Number (I)']
-    for f, p in zip(f_list, p_list):
-        dfr, n_p = df_open(os.path.join(main_dir, f))
-        dfr = dfr.drop(['type (H)', 'waxy (H)'], axis=1)    # df2, drop all na first
-        dfr2 = dfr.dropna()
-        #dfm = dfr.iloc[:, :924]
-        #dfp = dfr.iloc[:, 924:]
-        dfm2 = dfr2.iloc[:, :924]
-        dfp2 = dfr2.iloc[:, 924:]
+    dfr, n_p = df_open(os.path.join(main_dir, 'wm_df129_q.csv'))
+    dfr = dfr.drop(['type (H)', 'waxy (H)'], axis=1)  # df2, drop all na first
+    dfr2 = dfr.dropna()
+    dfm = dfr.iloc[:, :924]
+    dfp = dfr.iloc[:, 924:]
+    dfm2 = dfr2.iloc[:, :924]
+    dfp2 = dfr2.iloc[:, 924:]
+    ct = 50
+    tn = 45
+    th = 0.15
+    if x:
         for phenotype_r in phenotype_list:
-            #pn(dfm, dfp, main_dir, phenotype_r, p, 'no_drop', 50, 45, 0.15)
-            pn(dfm2, dfp2, main_dir, phenotype_r, p, 'drop', 50, 45, 0.15)
+            pn(dfm, dfp, main_dir, phenotype_r, 'wmq', 'no_drop', ct, tn, th)
+            pn(dfm2, dfp2, main_dir, phenotype_r, 'wmq', 'drop', ct, tn, th)
+    else:
+        for n in ['drop', 'no_drop']:
+            r_dir = os.path.join(main_dir, '{}_{}_c{}t{}th{}'.format('wmq', n, ct, tn, th))
+            c_path = os.path.join(r_dir, 'wmq_corT{}.csv'.format(ct))
+            p2gp, p2gm, m2c = cor_dict_get(c_path, th)
+            for phenotype in phenotype_list:
+                phe_m = phenotype.replace('(', '').replace(')', '').replace(' ', '_')
+                c_px = '{}_{}_c{}t{}'.format('wmq', n, ct, tn)
+                ssp = dfp2[phenotype] if n == 'drop' else dfp[phenotype]
+                ssp = ssp.dropna()
+                ss1 = s_top_gt(ssp, tn, True)
+                dfx = dfm2.loc[ss1.index, :] if n == 'drop' else dfm.loc[ss1.index, :]
+                for c in ['pos', 'neg', 'all']:
+                    with open(os.path.join(r_dir, '{}_{}_{}_mir'.format(c_px, phe_m, c))) as in_f:
+                        for line in in_f:
+                            lf = line.rstrip().split('\t')
+                            if int(lf[1]) <= 20:
+                                out_feature_plot(dfx, ss1, lf[2], m2c.get(phenotype), r_dir,
+                                                 '{}_{}_{}'.format(c_px, phe_m, c), int(lf[1]))
 
 
 if __name__ == '__main__':
