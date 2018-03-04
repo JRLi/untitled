@@ -110,6 +110,17 @@ def cor_dict_get(path_in, cor_t):
         return p2gp_dict, p2gm_dict, m2c_dict
 
 
+def p_dict_get(path_in, p_t):
+    m2p_dict = defaultdict(dict)
+    with open(path_in) as in_f:
+        next(in_f)
+        for line in in_f:
+            lf = line.rstrip().split(',')
+            if float(lf[2]) <= p_t:
+                m2p_dict[lf[0]][lf[1]] = lf[2]
+        return m2p_dict
+
+
 def select_r(df_in, ss_label, f_n, eps):
     if len(df_in.columns) > f_n:
         select = RFE(RandomForestClassifier(n_estimators=eps, random_state=1), n_features_to_select=f_n)
@@ -142,7 +153,8 @@ def fn_check_plot(df_in, path_o, title_n):
         plt.xlabel('Feature numbers')
         f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
         plt.savefig(os.path.join(o_dir, '{}_{}'.format(f_name, t.replace(' ', '_'))))
-        plt.gcf().clear()
+        #plt.gcf().clear()
+        plt.close()
 
 
 def mvc(df_xi, ss_y, title_n, out_path, c_dict, ts, f_number, eps, df_cv):
@@ -226,7 +238,8 @@ def plot_tt(dfm_in, ssp_in, ssp, path_o, phe, suf, rs=0):
     ap.axhline(y=ssp.mean(), color='r', linestyle='--', label='mean')
     plt.legend(loc='lower right')
     plt.savefig(os.path.join(o_dir, '{}_{}_rs{}_1'.format(phe, suf, rs)))
-    plt.gcf().clear()
+    #plt.gcf().clear()
+    plt.close()
     s_raw = pd.concat([ss_train, ss_test])
     s_raw.sort_values(inplace=True)
     s_t = pd.Series(0, index=ss_train.index)
@@ -245,7 +258,8 @@ def plot_tt(dfm_in, ssp_in, ssp, path_o, phe, suf, rs=0):
     plt.xlabel('rice sample index')
     plt.ylabel(phe)
     plt.savefig(os.path.join(o_dir, '{}_{}_rs{}_2'.format(phe, suf, rs)))
-    plt.gcf().clear()
+    #plt.gcf().clear()
+    plt.close()
 
 
 def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th):
@@ -273,23 +287,25 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th)
     print(df_mp.shape, df_mm.shape, df_ma.shape)
     # check top 50 sample split into training and test
     c_px = '{}_{}_c{}t{}'.format(f_prefix, na_suffix, top_cn, top_n)
+    p_dir = os.path.join(r_dir, phe_m)
+    prepare_output_dir(p_dir)
+    plot_tt(df_mp, ss1, ssp, p_dir, phe_m, c_px, 1)
 
-    plot_tt(df_mp, ss1, ssp, r_dir, phe_m, c_px, 1)
-
-    mir_p, roc_p = mvc(df_mp, ss1, '{}_{}_positive'.format(c_px, phenotype), r_dir, m2c.get(phenotype), 0.4, 30, 300, 10)
-    mir_m, roc_m = mvc(df_mm, ss1, '{}_{}_negative'.format(c_px, phenotype), r_dir, m2c.get(phenotype), 0.4, 30, 300, 10)
-    mir_a, roc_a = mvc(df_ma, ss1, '{}_{}_p_and_n'.format(c_px, phenotype), r_dir, m2c.get(phenotype), 0.4, 30, 300, 10)
+    mir_p, roc_p = mvc(df_mp, ss1, '{}_{}_positive'.format(c_px, phenotype), p_dir, m2c.get(phenotype), 0.4, 30, 300, 10)
+    mir_m, roc_m = mvc(df_mm, ss1, '{}_{}_negative'.format(c_px, phenotype), p_dir, m2c.get(phenotype), 0.4, 30, 300, 10)
+    mir_a, roc_a = mvc(df_ma, ss1, '{}_{}_p_and_n'.format(c_px, phenotype), p_dir, m2c.get(phenotype), 0.4, 30, 300, 10)
     for m, r, p in zip([mir_p, mir_m, mir_a], [roc_p, roc_m, roc_a], ['pos', 'neg', 'all']):
-        with open(os.path.join(r_dir, '{}_{}_{}_mir'.format(c_px, phe_m, p)), 'w') as o1, \
-                open(os.path.join(r_dir, '{}_{}_{}_roc'.format(c_px, phe_m, p)), 'w') as o2:
+        with open(os.path.join(p_dir, '{}_{}_{}_mir'.format(c_px, phe_m, p)), 'w') as o1, \
+                open(os.path.join(p_dir, '{}_{}_{}_roc'.format(c_px, phe_m, p)), 'w') as o2:
             o1.write('\n'.join(m) + '\n')
             o2.write(r + '\n')
 
 
-def out_feature_plot(dfx, ssy, f_string, m2c, path_o, title_n, f_number):
+def out_feature_plot(dfx, ssy, ssy_n, f_string, m2c, m2p, path_o, title_n, f_number):
     f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
     o_path = os.path.join(path_o, 'Features')
     prepare_output_dir(o_path)
+    lr_coe, lr_int, lr_score = linear_rg(dfx, ssy_n, f_string)
     high_df = dfx[ssy == 1]
     low_df = dfx[ssy == 0]
     f_list = f_string.split(',')
@@ -297,8 +313,9 @@ def out_feature_plot(dfx, ssy, f_string, m2c, path_o, title_n, f_number):
     ax = axes.ravel()
     with open(os.path.join(o_path, '{}_{}_cor.csv'.format(f_name, f_number)), 'w') as out_c:
         i = 0
-        for m in f_list:
-            out_c.write('{},{}\n'.format(m, m2c.get(m, 'No_result')))
+        out_c.write('miRNA,correlation,p_value,lr_coe(intercept {:.3f})\n'.format(lr_score))
+        for m, c in zip(f_list, lr_coe):
+            out_c.write('{},{},{},{}\n'.format(m, m2c.get(m, 'No_result'), m2p.get(m, 'No_result'), c))
             _, bins = np.histogram(dfx[m], bins=50)
             ax[i].hist(high_df[m], bins=bins, color='r', alpha=.5)
             ax[i].hist(low_df[m], bins=bins, color='b', alpha=.5)
@@ -313,17 +330,22 @@ def out_feature_plot(dfx, ssy, f_string, m2c, path_o, title_n, f_number):
         plt.savefig(os.path.join(o_path, '{}_{}_mir'.format(f_name, f_number)))
         #plt.gcf().clear()
         plt.close()
+        out_c.write(',,lr_score,{}\n'.format(lr_score))
 
 
-def linear_rg(dfx, ssy, f_string, path_o, title_n, f_number):
-    pass
+def linear_rg(dfx, ssy, f_string):
+    df = dfx.copy()
+    lr = LinearRegression()
+    x = df[f_string.split(',')]
+    lr.fit(x, ssy)
+    return lr.coef_, lr.intercept_, lr.score(x, ssy)
 
 
 def main():
-    x = False
-    main_dir = 'E:/StringTemp/Project_Rice'
-    phenotype_list = ['Panicle Number (I)']
-    dfr, n_p = df_open(os.path.join(main_dir, 'wm_df129_q.csv'))
+    check1 = True
+    check2 = True
+    main_dir = './'
+    dfr, n_p = df_open(os.path.join(main_dir, 'wm_all_q.csv'))
     dfr = dfr.drop(['type (H)', 'waxy (H)'], axis=1)  # df2, drop all na first
     dfr2 = dfr.dropna()
     dfm = dfr.iloc[:, :924]
@@ -333,29 +355,38 @@ def main():
     ct = 50
     tn = 45
     th = 0.15
-    if x:
-        for phenotype_r in phenotype_list:
+    if check1:
+        print('Step 1')
+        for phenotype_r in dfp2.columns:
+            print('Phenotype: {}'.format(phenotype_r))
             pn(dfm, dfp, main_dir, phenotype_r, 'wmq', 'no_drop', ct, tn, th)
             pn(dfm2, dfp2, main_dir, phenotype_r, 'wmq', 'drop', ct, tn, th)
-    else:
+    if check2:
+        print('Step 2')
         for n in ['drop', 'no_drop']:
             r_dir = os.path.join(main_dir, '{}_{}_c{}t{}th{}'.format('wmq', n, ct, tn, th))
             c_path = os.path.join(r_dir, 'wmq_corT{}.csv'.format(ct))
             p2gp, p2gm, m2c = cor_dict_get(c_path, th)
-            for phenotype in phenotype_list:
+            m2p = p_dict_get(os.path.join(r_dir, 'wmq_pvlT{}.csv'.format(ct)), 0.8)
+            for phenotype in  dfp2.columns:
+                print('Phenotype: {}'.format(phenotype))
                 phe_m = phenotype.replace('(', '').replace(')', '').replace(' ', '_')
+                p_dir = os.path.join(r_dir, phe_m)
+                prepare_output_dir(p_dir)
                 c_px = '{}_{}_c{}t{}'.format('wmq', n, ct, tn)
                 ssp = dfp2[phenotype] if n == 'drop' else dfp[phenotype]
                 ssp = ssp.dropna()
                 ss1 = s_top_gt(ssp, tn, True)
                 dfx = dfm2.loc[ss1.index, :] if n == 'drop' else dfm.loc[ss1.index, :]
                 for c in ['pos', 'neg', 'all']:
-                    with open(os.path.join(r_dir, '{}_{}_{}_mir'.format(c_px, phe_m, c))) as in_f:
+                    with open(os.path.join(p_dir, '{}_{}_{}_mir'.format(c_px, phe_m, c))) as in_f:
                         for line in in_f:
                             lf = line.rstrip().split('\t')
                             if int(lf[1]) <= 20:
-                                out_feature_plot(dfx, ss1, lf[2], m2c.get(phenotype), r_dir,
+                                out_feature_plot(dfx, ss1, ssp, lf[2], m2c.get(phenotype), m2p.get(phenotype), p_dir,
                                                  '{}_{}_{}'.format(c_px, phe_m, c), int(lf[1]))
+    else:
+        pass
 
 
 if __name__ == '__main__':
