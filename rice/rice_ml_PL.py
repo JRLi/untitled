@@ -306,6 +306,8 @@ def out_feature_plot(dfx, ssy, ssy_n, f_string, m2c, m2p, path_o, title_n, f_num
     o_path = os.path.join(path_o, 'Features')
     prepare_output_dir(o_path)
     lr_coe, lr_int, lr_score = linear_rg(dfx, ssy_n, f_string)
+    df_p = t_test(dfx, ssy, f_string)
+    df_p.to_csv(os.path.join(o_path, '{}_{}_pvl.csv'.format(f_name, f_number)))
     high_df = dfx[ssy == 1]
     low_df = dfx[ssy == 0]
     f_list = f_string.split(',')
@@ -313,7 +315,7 @@ def out_feature_plot(dfx, ssy, ssy_n, f_string, m2c, m2p, path_o, title_n, f_num
     ax = axes.ravel()
     with open(os.path.join(o_path, '{}_{}_cor.csv'.format(f_name, f_number)), 'w') as out_c:
         i = 0
-        out_c.write('miRNA,correlation,p_value,lr_coe(intercept {:.3f})\n'.format(lr_score))
+        out_c.write('miRNA,correlation,p_value,lr_coe(intercept {:.3f})\n'.format(lr_int))
         for m, c in zip(f_list, lr_coe):
             out_c.write('{},{},{},{}\n'.format(m, m2c.get(m, 'No_result'), m2p.get(m, 'No_result'), c))
             _, bins = np.histogram(dfx[m], bins=50)
@@ -341,8 +343,31 @@ def linear_rg(dfx, ssy, f_string):
     return lr.coef_, lr.intercept_, lr.score(x, ssy)
 
 
+def scipy_ttest_ind(s1, s2, var=False):
+    return st.ttest_ind(s1, s2, equal_var=var)
+
+
+def t_test(dfx, ssy, f_string):
+    x = dfx[f_string.split(',')]
+    y = ssy.copy()
+    x0 = x.loc[y[y == 0].index, :]
+    x1 = x.loc[y[y == 1].index, :]
+    df1 = pd.DataFrame()
+    df1['Low_mean'] = x0.mean()
+    df1['High_mean'] = x1.mean()
+    df1['FC(High/Low)'] = x1.mean() / x0.mean()
+    p_list = []
+    for m in df1.index:
+        pv = scipy_ttest_ind(x0[m], x1[m])[1]
+        p_list.append('{:.3g}'.format(pv))
+    df1['ind_t_test'] = np.array(p_list)
+    df1['Low_std'] = x0.std()
+    df1['High_std'] = x1.std()
+    return df1
+
+
 def main():
-    check1 = True
+    check1 = False
     check2 = True
     main_dir = './'
     dfr, n_p = df_open(os.path.join(main_dir, 'wm_all_q.csv'))
@@ -377,6 +402,7 @@ def main():
                 ssp = dfp2[phenotype] if n == 'drop' else dfp[phenotype]
                 ssp = ssp.dropna()
                 ss1 = s_top_gt(ssp, tn, True)
+                ssp = ssp[ss1.index]
                 dfx = dfm2.loc[ss1.index, :] if n == 'drop' else dfm.loc[ss1.index, :]
                 for c in ['pos', 'neg', 'all']:
                     with open(os.path.join(p_dir, '{}_{}_{}_mir'.format(c_px, phe_m, c))) as in_f:
