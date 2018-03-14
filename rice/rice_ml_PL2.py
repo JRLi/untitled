@@ -5,7 +5,11 @@ import scipy.stats as st
 import os
 import math
 import matplotlib.pyplot as plt
+import matplotlib.ticker as plticker
+from numpy import interp
 from collections import defaultdict
+from sklearn import metrics
+from sklearn.model_selection import StratifiedKFold
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -152,6 +156,7 @@ def fn_check_plot(df_in, path_o, title_n):
         plt.legend(loc='lower right')
         plt.title(title_n)
         plt.grid()
+        plt.xticks(np.arange(min(df1['mir_number']), max(df1['mir_number']) + 1, 5))
         plt.xlabel('Feature numbers')
         f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
         plt.savefig(os.path.join(o_dir, '{}_{}'.format(f_name, t.replace(' ', '_'))))
@@ -159,6 +164,8 @@ def fn_check_plot(df_in, path_o, title_n):
 
 
 def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
+    r_path = os.path.join(out_path, 'roc_curve')
+    prepare_output_dir(r_path)
     df_x = df_xi.copy()
     fn_list, l_tr_list, l_cv_list, l_ts_list, m_tr_list, m_cv_list, m_ts_list = [], [], [], [], [], [], []
     ml_tr_list, ml_cv_list, ml_ts_list = [], [], []
@@ -171,8 +178,8 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
         tmp1_list.append('{},{},{}'.format(fn, f_l, feature_string))
         x_train, x_test, y_train, y_test = train_test_split(x, ss_y, test_size=ts, random_state=1)
         clf1 = LogisticRegression(penalty='l2', C=0.001, random_state=0)
-        clf2 = SVC(probability=True)
-        clf3 = SVC(kernel='linear', probability=True)
+        clf2 = SVC(probability=True, random_state=0)
+        clf3 = SVC(kernel='linear', probability=True, random_state=0)
         pipe1 = Pipeline([['sc', StandardScaler()], ['clf', clf1]])
         pipe2 = Pipeline([['mc', MinMaxScaler()], ['clf', clf2]])
         pipe3 = Pipeline([['sc', StandardScaler()], ['clf', clf3]])
@@ -204,6 +211,50 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 ml_cv_list.append(cv_roc.mean())
                 ml_tr_list.append(roc_auc_tr)
                 ml_ts_list.append(roc_auc)
+            if fn in [5, 10, 15, 20]:
+                nx = x.copy()
+                ny = ss_y.values
+                cvf = StratifiedKFold(n_splits=cv)
+                tprs, aucs = [], []
+                mean_fpr = np.linspace(0, 1, 100)
+                j = 0
+                plt.rcParams["figure.figsize"] = [12, 9]
+                for train, test in cvf.split(nx, ny):
+                    md = clf.fit(nx[train], ny[train])
+                    pb = md.predict_proba(nx[test])
+                    fpr_cv, tpr_cv, thresholds_cv = metrics.roc_curve(ny[test], pb[:, 1])
+                    tprs.append(interp(mean_fpr, fpr_cv, tpr_cv))
+                    tprs[-1][0] = 0.0
+                    roc_auc_cv = metrics.auc(fpr_cv, tpr_cv)
+                    aucs.append(roc_auc_cv)
+                    plt.plot(fpr_cv, tpr_cv, lw=1, alpha=0.3, label='{} fold {} (AUC = {:.2f})'
+                             .format(label, j, roc_auc_cv))
+                    j += 1
+                mean_tpr = np.mean(tprs, axis=0)
+                mean_tpr[-1] = 1.0
+                mean_auc = metrics.auc(mean_fpr, mean_tpr)
+                std_auc = np.std(aucs)
+                plt.plot(mean_fpr, mean_tpr, color='b', label=r'CV Mean ROC (AUC = %0.2f $\pm$ %0.2f)' %
+                                                              (mean_auc, std_auc), lw=2, alpha=.8)
+                std_tpr = np.std(tprs, axis=0)
+                tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+                tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+                plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2, label=r'$\pm$ 1 std. dev.')
+                plt.plot(fpr, tpr, color='r', linestyle=':', label='{} Test (AUC = {:.2f})'.format(label, roc_auc),
+                         lw=2, alpha=.8)
+                plt.plot(fpr_tr, tpr_tr, color='g', linestyle='-.', label='{} Train (auc = {:.2f})'
+                         .format(label, roc_auc_tr), lw=2, alpha=.8)
+                plt.legend(loc='lower right')
+                plt.plot([0, 1], [0, 1], linestyle='--', color='gray', linewidth=2)
+                plt.xlim([-0.1, 1.1])
+                plt.ylim([-0.1, 1.1])
+                plt.title('Receiver operating characteristic of [{}]'.format(label))
+                plt.grid()
+                plt.xlabel('False Positive Rate (1 - Specificity)')
+                plt.ylabel('True Positive Rate (Sensitivity)')
+                f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
+                plt.savefig(os.path.join(r_path, '{}_{}_{}'.format(f_name, label.replace(' ', '_'), fn)))
+                plt.close()
     print()
     df_s = pd.DataFrame()
     df_s['mir_number'] = pd.Series(fn_list)
@@ -274,7 +325,7 @@ def plot_tt(dfm_in, ssp_in, ssp, path_o, phe, suf, rs=0):
     plt.close()
 
 
-def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th):
+def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th, fn):
     r_dir = os.path.join(r_p, '{}_{}_c{}t{}th{}'.format(f_prefix, na_suffix, top_cn, top_n, c_th))
     prepare_output_dir(r_dir)
     dfm = df_mir.copy()
@@ -302,9 +353,9 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th)
     prepare_output_dir(p_dir)
     plot_tt(df_mp, ss1, ssp, p_dir, phe_m, c_px, 1)
 
-    mir_p, roc_p = mvc(df_mp, ss1, '{}_{}_positive'.format(c_px, phenotype), p_dir, 0.4, 50, 300, 10)
-    mir_m, roc_m = mvc(df_mm, ss1, '{}_{}_negative'.format(c_px, phenotype), p_dir, 0.4, 50, 300, 10)
-    mir_a, roc_a = mvc(df_ma, ss1, '{}_{}_all'.format(c_px, phenotype), p_dir, 0.4, 50, 300, 10)
+    mir_p, roc_p = mvc(df_mp, ss1, '{}_{}_positive'.format(c_px, phenotype), p_dir, 0.4, fn, 300, 10)
+    mir_m, roc_m = mvc(df_mm, ss1, '{}_{}_negative'.format(c_px, phenotype), p_dir, 0.4, fn, 300, 10)
+    mir_a, roc_a = mvc(df_ma, ss1, '{}_{}_all'.format(c_px, phenotype), p_dir, 0.4, fn, 300, 10)
     for m, r, p in zip([mir_p, mir_m, mir_a], [roc_p, roc_m, roc_a], ['pos', 'neg', 'all']):
         with open(os.path.join(p_dir, '{}_{}_{}_mir.csv'.format(c_px, phe_m, p)), 'w') as o1, \
                 open(os.path.join(p_dir, '{}_{}_{}_roc.csv'.format(c_px, phe_m, p)), 'w') as o2:
@@ -313,19 +364,46 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th)
             o2.write(r + '\n')
 
 
+def feature_score(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe):
+    o_path = os.path.join(path_o, 'feature_score')
+    prepare_output_dir(o_path)
+    dfs = dfx[f_string.split(',')]
+    mc_list = [float(m2c.get(x)) for x in dfs.columns]
+    ssc = pd.Series(mc_list, index=dfs.columns)
+    dfc = dfs * ssc
+    df1 = pd.DataFrame()
+    df1['scores'] = dfc.sum(1)
+    df1[phe] = ssy_n
+    df1 = df1.sort_values('scores')
+    df1['index'] = range(1, 1 + len(ssy_n))
+    df1.to_csv(os.path.join(o_path, '{}_{}.csv'.format(title_n, f_number)))
+    ax = df1.plot(kind='scatter', x='index', y='scores', color='b', label='mir_scores', title='{}_{}'
+                  .format(title_n, f_number))
+    ax.set_xlabel('rice sample index')
+    ax.set_ylabel('feature scores', color='b')
+    ax.tick_params('y', colors='b')
+    ax2 = ax.twinx()
+    df1.plot(kind='scatter', x='index', y=phe, color='r', label='phenotype', ax=ax2)
+    ax2.set_ylabel(phe, color='r')
+    ax2.tick_params('y', colors='r')
+    ax2.legend(loc=9)
+    plt.grid()
+    plt.savefig(os.path.join(o_path, '{}_{}'.format(title_n, f_number)))
+    plt.close()
+
+
 def out_feature_plot(dfx, ssy, ssy_n, f_string, m2c, m2p, path_o, title_n, f_number):
-    f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
     o_path = os.path.join(path_o, 'Features')
     prepare_output_dir(o_path)
     lr_coe, lr_int, lr_score = linear_rg(dfx, ssy_n, f_string)
     df_p = t_test(dfx, ssy, f_string)
-    df_p.to_csv(os.path.join(o_path, '{}_{}_pvl.csv'.format(f_name, f_number)))
+    df_p.to_csv(os.path.join(o_path, '{}_{}_pvl.csv'.format(title_n, f_number)))
     high_df = dfx[ssy == 1]
     low_df = dfx[ssy == 0]
     f_list = f_string.split(',')
     fig, axes = plt.subplots(math.ceil(f_number / 2), 2, figsize=(10, 2 * math.ceil(f_number / 2)))
     ax = axes.ravel()
-    with open(os.path.join(o_path, '{}_{}_cor.csv'.format(f_name, f_number)), 'w') as out_c:
+    with open(os.path.join(o_path, '{}_{}_cor.csv'.format(title_n, f_number)), 'w') as out_c:
         i = 0
         out_c.write('miRNA,correlation,p_value,lr_coe(intercept {:.3f})\n'.format(lr_int))
         for m, c in zip(f_list, lr_coe):
@@ -341,7 +419,7 @@ def out_feature_plot(dfx, ssy, ssy_n, f_string, m2c, m2p, path_o, title_n, f_num
         ax[1].legend(['High', 'Low'], loc='best')
         fig.tight_layout()
         plt.suptitle(title_n)
-        plt.savefig(os.path.join(o_path, '{}_{}_mir'.format(f_name, f_number)))
+        plt.savefig(os.path.join(o_path, '{}_{}_mir'.format(title_n, f_number)))
         plt.close()
         out_c.write(',,lr_score,{}\n'.format(lr_score))
 
@@ -378,9 +456,10 @@ def t_test(dfx, ssy, f_string):
 
 
 def main():
-    check1 = True
+    check1 = False
     test1 = True
     check2 = True
+    check3 = True
     main_dir = './'
     dfr, n_p = df_open(os.path.join(main_dir, 'wm_all_q.csv'))
     dfr = dfr.drop(['type (H)', 'waxy (H)'], axis=1)  # df2, drop all na first
@@ -392,13 +471,14 @@ def main():
     ct = 50
     tn = 45
     th = 0.15
+    fn = 50
     if check1:
         print('Step 1')
         c_list = ['Panicle Number (I)'] if test1 else dfp2.columns
         for phenotype_r in c_list:
             print('Phenotype: {}'.format(phenotype_r))
-            pn(dfm, dfp, main_dir, phenotype_r, 'wmq', 'no_drop', ct, tn, th)
-            pn(dfm2, dfp2, main_dir, phenotype_r, 'wmq', 'drop', ct, tn, th)
+            pn(dfm, dfp, main_dir, phenotype_r, 'wmq', 'no_drop', ct, tn, th, fn)
+            pn(dfm2, dfp2, main_dir, phenotype_r, 'wmq', 'drop', ct, tn, th, fn)
     if check2:
         print('Step 2')
         c_list = ['Panicle Number (I)'] if test1 else dfp2.columns
@@ -425,8 +505,35 @@ def main():
                             if 10 <= int(lf[1]) <= 30:
                                 out_feature_plot(dfx, ss1, ssp, lf[2], m2c.get(phenotype), m2p.get(phenotype), p_dir,
                                                  '{}_{}_{}'.format(c_px, phe_m, c), int(lf[1]))
-    else:
-        pass
+                                feature_score(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'
+                                              .format(c_px, phe_m, c), int(lf[1]), phe_m)
+    if check3:
+        print('Step 3')
+        top_list = range(30, 56, 5)
+        o_dir = './n_test'
+        prepare_output_dir(o_dir)
+        c_path = os.path.join(o_dir, 'wmq_corT50.csv')
+        if not os.path.exists(c_path):
+            df_c, df_p = rice_corr(dfm2, dfp2, 50, 'pearson')
+            extract_rc(c_path, df_c, locate(df_c, 'c', 0.01), 'correlation')
+        ssp = dfp2['Panicle Number (I)']
+        for tn in top_list:
+            print('[top {}]'.format(tn))
+            ss1 = s_top_gt(ssp, tn, True)
+            p2gp, p2gm, m2c = cor_dict_get(c_path, 0.15)
+            df_mp = dfm2.loc[ss1.index, p2gp.get('Panicle Number (I)')]
+            df_mm = dfm2.loc[ss1.index, p2gm.get('Panicle Number (I)')]
+            df_ma = pd.concat([df_mp, df_mm], 1)
+            mir_p, roc_p = mvc(df_mp, ss1, 'PNI_{}_pos'.format(tn), o_dir, 0.4, fn, 300, 10)
+            mir_m, roc_m = mvc(df_mm, ss1, 'PNI_{}_neg'.format(tn), o_dir, 0.4, fn, 300, 10)
+            mir_a, roc_a = mvc(df_ma, ss1, 'PNI_{}_all'.format(tn), o_dir, 0.4, fn, 300, 10)
+            for m, r, p in zip([mir_p, mir_m, mir_a], [roc_p, roc_m, roc_a], ['pos', 'neg', 'all']):
+                with open(os.path.join(o_dir, 'PNI_{}_mir.csv'.format(tn)), 'w') as o1, \
+                        open(os.path.join(o_dir, 'PNI_{}_roc.csv'.format(tn)), 'w') as o2:
+                    o2.write('Feature_number,table_process,Phenotype_mir_type,ML,cv_mean,cv_std,roc_train,roc_test\n')
+                    o1.write('\n'.join(m) + '\n')
+                    o2.write(r + '\n')
+
 
 
 if __name__ == '__main__':
