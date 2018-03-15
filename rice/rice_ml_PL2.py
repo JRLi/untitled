@@ -156,7 +156,7 @@ def fn_check_plot(df_in, path_o, title_n):
         plt.legend(loc='lower right')
         plt.title(title_n)
         plt.grid()
-        plt.xticks(np.arange(min(df1['mir_number']), max(df1['mir_number']) + 1, 5))
+        plt.xticks(np.arange(0, max(df1['mir_number']) + 1, 5))
         plt.xlabel('Feature numbers')
         f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
         plt.savefig(os.path.join(o_dir, '{}_{}'.format(f_name, t.replace(' ', '_'))))
@@ -456,7 +456,7 @@ def t_test(dfx, ssy, f_string):
 
 
 def main():
-    check1 = False
+    check1 = True
     test1 = True
     check2 = True
     check3 = True
@@ -533,7 +533,6 @@ def main():
                     o2.write('Feature_number,table_process,Phenotype_mir_type,ML,cv_mean,cv_std,roc_train,roc_test\n')
                     o1.write('\n'.join(m) + '\n')
                     o2.write(r + '\n')
-
 
 
 if __name__ == '__main__':
