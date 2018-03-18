@@ -211,7 +211,7 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 ml_cv_list.append(cv_roc.mean())
                 ml_tr_list.append(roc_auc_tr)
                 ml_ts_list.append(roc_auc)
-            if fn in [5, 10, 15, 20]:
+            if fn in [5, 10, 15, 20, 25, 30]:
                 nx = x.copy()
                 ny = ss_y.values
                 cvf = StratifiedKFold(n_splits=cv)
@@ -364,6 +364,27 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th,
             o2.write(r + '\n')
 
 
+def feature_score2(df_in, path_o, title_n, f_number, phe):
+    df1 = df_in.copy()
+    df1 = df1.sort_values(phe)
+    df1['index'] = range(1, 1 + len(df1.index))
+    o_path = os.path.join(path_o, 'feature_score2')
+    prepare_output_dir(o_path)
+    ax = df1.plot(kind='scatter', x='index', y=phe, color='r', label='phenotype', title='{}_{}'
+                  .format(title_n, f_number))
+    ax.set_xlabel('rice sample index')
+    ax.set_ylabel(phe, color='r')
+    ax.tick_params('y', colors='r')
+    ax2 = ax.twinx()
+    df1.plot(kind='scatter', x='index', y='scores', color='b', label='mir_scores', ax=ax2)
+    ax2.set_ylabel('feature scores', color='b')
+    ax2.tick_params('y', colors='b')
+    ax2.legend(loc=9)
+    plt.grid()
+    plt.savefig(os.path.join(o_path, '{}_{}_v2'.format(title_n, f_number)))
+    plt.close()
+
+
 def feature_score(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe):
     o_path = os.path.join(path_o, 'feature_score')
     prepare_output_dir(o_path)
@@ -374,6 +395,7 @@ def feature_score(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe):
     df1 = pd.DataFrame()
     df1['scores'] = dfc.sum(1)
     df1[phe] = ssy_n
+    feature_score2(df1, path_o, title_n, f_number, phe)
     df1 = df1.sort_values('scores')
     df1['index'] = range(1, 1 + len(ssy_n))
     df1.to_csv(os.path.join(o_path, '{}_{}.csv'.format(title_n, f_number)))
