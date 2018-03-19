@@ -387,10 +387,15 @@ def feature_score2(df_in, path_o, title_n, f_number, phe):
 
 def feature_score(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe):
     o_path = os.path.join(path_o, 'feature_score')
+    o_path2 = os.path.join(o_path, 'for_check_score')
     prepare_output_dir(o_path)
+    prepare_output_dir(o_path2)
     dfs = dfx[f_string.split(',')]
     mc_list = [float(m2c.get(x)) for x in dfs.columns]
     ssc = pd.Series(mc_list, index=dfs.columns)
+    dfz = dfs.T
+    dfz['cor'] = ssc
+    dfz.to_csv(os.path.join(o_path2, '{}_{}cor.csv'.format(title_n, f_number)))
     dfc = dfs * ssc
     df1 = pd.DataFrame()
     df1['scores'] = dfc.sum(1)
@@ -479,7 +484,7 @@ def t_test(dfx, ssy, f_string):
 
 def main():
     check1 = True
-    test1 = True
+    test1 = False
     check2 = True
     check3 = True
     main_dir = './'
