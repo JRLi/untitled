@@ -22,6 +22,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
+from sklearn.metrics import confusion_matrix
 
 
 def prepare_output_dir(output_dir):
@@ -97,6 +98,21 @@ def s_top_gt(series_input, top_n, gt=False):
     return ss
 
 
+def con_m(y_true, y_pre):
+    cm = confusion_matrix(y_true, y_pre)
+    total = sum(sum(cm))
+    print(cm)
+    print(total)
+    acc = (cm[0, 0] + cm[1, 1]) / total
+    sensitivity1 = cm[0, 0] / (cm[0, 0] + cm[0, 1])
+    specificity1 = cm[1, 1] / (cm[1, 0] + cm[1, 1])
+    precision1 = cm[0, 0] / (cm[0, 0] + cm[1, 0])
+    print('Accuracy : ', acc)
+    print('Sensitivity (recall) : ', sensitivity1)
+    print('Specificity : ', specificity1)
+    return total, acc, sensitivity1, specificity1, precision1
+
+
 def cor_dict_get(path_in, cor_t):
     p2gp_dict, p2gm_dict = defaultdict(list), defaultdict(list)
     m2c_dict = defaultdict(dict)
@@ -166,6 +182,9 @@ def fn_check_plot(df_in, path_o, title_n):
 def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     r_path = os.path.join(out_path, 'roc_curve')
     prepare_output_dir(r_path)
+    pre_path = 'pos' if title_n.endswith('positive') else 'neg' if title_n.endswith('negative') else 'all'
+    pre_path2 = os.path.join(r_path, pre_path)
+    prepare_output_dir(pre_path2)
     df_x = df_xi.copy()
     fn_list, l_tr_list, l_cv_list, l_ts_list, m_tr_list, m_cv_list, m_ts_list = [], [], [], [], [], [], []
     ml_tr_list, ml_cv_list, ml_ts_list = [], [], []
@@ -190,15 +209,18 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
             cv_roc = cross_val_score(estimator=clf, X=x, y=ss_y, cv=cv, scoring='roc_auc')
             lf = title_n.split('_')
             clf.fit(x_train, y_train)
+            n_tr, acc_tr, sen_tr, spe_tr, pre_tr = con_m(y_train, clf.predict(x_train))
+            n_ts, acc_ts, sen_ts, spe_ts, pre_ts = con_m(y_test, clf.predict(x_test))
             y_pre_tr = clf.predict_proba(x_train)[:, 1]
             y_pre_ts = clf.predict_proba(x_test)[:, 1]
             fpr_tr, tpr_tr, thresholds_tr = roc_curve(y_true=y_train, y_score=y_pre_tr)
             fpr, tpr, thresholds = roc_curve(y_true=y_test, y_score=y_pre_ts)
             roc_auc_tr = auc(x=fpr_tr, y=tpr_tr)
             roc_auc = auc(x=fpr, y=tpr)
-            tmp2_list.append('{},{},{},[{}],{:.2f},+/- {:.2f},{:.2f},{:.2f}'.
-                             format(f_l, '_'.join(lf[0:3]), '_'.join(lf[3:]), label, cv_roc.mean(), cv_roc.std(),
-                                    roc_auc_tr, roc_auc))
+            tmp2_list.append('{},{},{},[{}],{:.2f} +/- {:.2f},{},{},{},{},{},{},{},{},{},{},{},{}'.
+                             format(f_l, '_'.join(lf[0:3]), '_'.join(lf[3:]), label, cv_roc.mean(), cv_roc.std(), n_tr,
+                                    roc_auc_tr, acc_tr, pre_tr, sen_tr, spe_tr, n_ts, roc_auc, acc_ts, pre_ts, sen_ts,
+                                    spe_ts))
             if label == 'Logistic Regression':
                 l_cv_list.append(cv_roc.mean())
                 l_tr_list.append(roc_auc_tr)
@@ -370,6 +392,10 @@ def feature_score2(df_in, path_o, title_n, f_number, phe):
     df1['index'] = range(1, 1 + len(df1.index))
     o_path = os.path.join(path_o, 'feature_score2')
     prepare_output_dir(o_path)
+    pre_path = 'pos' if title_n.endswith('pos') else 'neg' if title_n.endswith('neg') else 'all'
+    pre_path2 = os.path.join(o_path, pre_path)
+    prepare_output_dir(pre_path2)
+
     ax = df1.plot(kind='scatter', x='index', y=phe, color='r', label='phenotype', title='{}_{}'
                   .format(title_n, f_number))
     ax.set_xlabel('rice sample index')
@@ -381,7 +407,7 @@ def feature_score2(df_in, path_o, title_n, f_number, phe):
     ax2.tick_params('y', colors='b')
     ax2.legend(loc=9)
     plt.grid()
-    plt.savefig(os.path.join(o_path, '{}_{}_v2'.format(title_n, f_number)))
+    plt.savefig(os.path.join(pre_path2, '{}_{}_v2'.format(title_n, f_number)))
     plt.close()
 
 
@@ -390,6 +416,10 @@ def feature_score(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe):
     o_path2 = os.path.join(o_path, 'for_check_score')
     prepare_output_dir(o_path)
     prepare_output_dir(o_path2)
+    pre_path = 'pos' if title_n.endswith('pos') else 'neg' if title_n.endswith('neg') else 'all'
+    pre_path2 = os.path.join(o_path, pre_path)
+    prepare_output_dir(pre_path2)
+
     dfs = dfx[f_string.split(',')]
     mc_list = [float(m2c.get(x)) for x in dfs.columns]
     ssc = pd.Series(mc_list, index=dfs.columns)
@@ -403,7 +433,7 @@ def feature_score(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe):
     feature_score2(df1, path_o, title_n, f_number, phe)
     df1 = df1.sort_values('scores')
     df1['index'] = range(1, 1 + len(ssy_n))
-    df1.to_csv(os.path.join(o_path, '{}_{}.csv'.format(title_n, f_number)))
+    df1.to_csv(os.path.join(pre_path2, '{}_{}.csv'.format(title_n, f_number)))
     ax = df1.plot(kind='scatter', x='index', y='scores', color='b', label='mir_scores', title='{}_{}'
                   .format(title_n, f_number))
     ax.set_xlabel('rice sample index')
@@ -415,22 +445,25 @@ def feature_score(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe):
     ax2.tick_params('y', colors='r')
     ax2.legend(loc=9)
     plt.grid()
-    plt.savefig(os.path.join(o_path, '{}_{}'.format(title_n, f_number)))
+    plt.savefig(os.path.join(pre_path2, '{}_{}'.format(title_n, f_number)))
     plt.close()
 
 
 def out_feature_plot(dfx, ssy, ssy_n, f_string, m2c, m2p, path_o, title_n, f_number):
     o_path = os.path.join(path_o, 'Features')
     prepare_output_dir(o_path)
+    pre_path = 'pos' if title_n.endswith('pos') else 'neg' if title_n.endswith('neg') else 'all'
+    pre_path2 = os.path.join(o_path, pre_path)
+    prepare_output_dir(pre_path2)
     lr_coe, lr_int, lr_score = linear_rg(dfx, ssy_n, f_string)
     df_p = t_test(dfx, ssy, f_string)
-    df_p.to_csv(os.path.join(o_path, '{}_{}_pvl.csv'.format(title_n, f_number)))
+    df_p.to_csv(os.path.join(pre_path2, '{}_{}_pvl.csv'.format(title_n, f_number)))
     high_df = dfx[ssy == 1]
     low_df = dfx[ssy == 0]
     f_list = f_string.split(',')
     fig, axes = plt.subplots(math.ceil(f_number / 2), 2, figsize=(10, 2 * math.ceil(f_number / 2)))
     ax = axes.ravel()
-    with open(os.path.join(o_path, '{}_{}_cor.csv'.format(title_n, f_number)), 'w') as out_c:
+    with open(os.path.join(pre_path2, '{}_{}_cor.csv'.format(title_n, f_number)), 'w') as out_c:
         i = 0
         out_c.write('miRNA,correlation,p_value,lr_coe(intercept {:.3f})\n'.format(lr_int))
         for m, c in zip(f_list, lr_coe):
@@ -446,7 +479,7 @@ def out_feature_plot(dfx, ssy, ssy_n, f_string, m2c, m2p, path_o, title_n, f_num
         ax[1].legend(['High', 'Low'], loc='best')
         fig.tight_layout()
         plt.suptitle(title_n)
-        plt.savefig(os.path.join(o_path, '{}_{}_mir'.format(title_n, f_number)))
+        plt.savefig(os.path.join(pre_path2, '{}_{}_mir'.format(title_n, f_number)))
         plt.close()
         out_c.write(',,lr_score,{}\n'.format(lr_score))
 
@@ -485,8 +518,8 @@ def t_test(dfx, ssy, f_string):
 def main():
     check1 = True
     test1 = False
-    check2 = True
-    check3 = True
+    check2 = False
+    check3 = False
     main_dir = './'
     dfr, n_p = df_open(os.path.join(main_dir, 'wm_all_q.csv'))
     dfr = dfr.drop(['type (H)', 'waxy (H)'], axis=1)  # df2, drop all na first
@@ -504,12 +537,14 @@ def main():
         c_list = ['Panicle Number (I)'] if test1 else dfp2.columns
         for phenotype_r in c_list:
             print('Phenotype: {}'.format(phenotype_r))
-            pn(dfm, dfp, main_dir, phenotype_r, 'wmq', 'no_drop', ct, tn, th, fn)
+            #pn(dfm, dfp, main_dir, phenotype_r, 'wmq', 'no_drop', ct, tn, th, fn)
             pn(dfm2, dfp2, main_dir, phenotype_r, 'wmq', 'drop', ct, tn, th, fn)
     if check2:
         print('Step 2')
+        #d_list = ['drop', 'no_drop']
+        d_list = ['drop']
         c_list = ['Panicle Number (I)'] if test1 else dfp2.columns
-        for n in ['drop', 'no_drop']:
+        for n in d_list:
             r_dir = os.path.join(main_dir, '{}_{}_c{}t{}th{}'.format('wmq', n, ct, tn, th))
             c_path = os.path.join(r_dir, 'wmq_corT{}.csv'.format(ct))
             p2gp, p2gm, m2c = cor_dict_get(c_path, th)
