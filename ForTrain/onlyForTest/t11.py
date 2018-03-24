@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-import matplotlib.ticker as plticker
 from collections import defaultdict
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
@@ -12,56 +11,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
-
-
-def s_top_gt(series_input, top_n, gt=False):
-    ss = series_input.copy()
-    if (top_n != 0) and (top_n < len(ss)/2):
-        ss.sort_values(inplace=True)
-        ss = ss.iloc[range(-top_n, top_n)]
-    if gt:
-        ss = ss.gt(ss.mean()).astype(np.short)
-    return ss
-
-
-def cor_dict_get(path_in, phe):
-    m2c_dict = defaultdict(dict)
-    with open(path_in) as in_f:
-        next(in_f)
-        for line in in_f:
-            lf = line.rstrip().split(',')
-            if lf[0] == phe:
-                m2c_dict[lf[0]][lf[1]] = lf[2]
-        return m2c_dict
+import seaborn as sns
 
 
 a = range(30, 56, 5)
 for i in a:
     print(i)
 
-f_raw = 'E:/StringTemp/Project_Rice/wm_df129_q.csv'
-f_cor = 'E:/StringTemp/Project_Rice/test2/wmq_drop_c50t45th0.15/wmq_corT50.csv'
-f_mir = 'E:/StringTemp/Project_Rice/test2/wmq_drop_c50t45th0.15/Panicle_Number_I/wmq_drop_c50t45_Panicle_Number_I_neg_mir.csv'
-df1 = pd.read_csv(f_raw, index_col=0)
-df1 = df1.drop(['type (H)', 'waxy (H)'], axis=1)  # df2, drop all na first
-df1 = df1.dropna()
-dfm = df1.iloc[:, :924]
-dfp = df1.iloc[:, 924:]
-ssy = dfp['Panicle Number (I)']
-ssy = s_top_gt(ssy, 10)
-with open(f_mir) as in_f:
-    for line in in_f:
-        if line.startswith('15'):
-            lf = line.rstrip().split(',', 2)
-            dfm = dfm.loc[ssy.index, lf[2].split(',')]
-print(ssy.shape)
-
-p_m2c = cor_dict_get(f_cor, 'Panicle Number (I)')
-mc_list = [float(p_m2c.get('Panicle Number (I)').get(x)) for x in dfm.columns]
-ssc = pd.Series(mc_list, index=dfm.columns)
-print(ssc.shape)
-dfmc = dfm * ssc
-print(dfmc.shape)
 
 df1 = pd.DataFrame(np.random.randint(low=0, high=10, size=(4, 3)), index=['r', 'i', 'c', 'e'], columns=['m', 'i', 'r'])
 ss1 = pd.Series([1, 2, 3], index=['m', 'i', 'r'])
