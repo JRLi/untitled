@@ -275,7 +275,7 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 plt.xlabel('False Positive Rate (1 - Specificity)')
                 plt.ylabel('True Positive Rate (Sensitivity)')
                 f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
-                plt.savefig(os.path.join(r_path, '{}_{}_{}'.format(f_name, label.replace(' ', '_'), fn)))
+                plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(f_name, label.replace(' ', '_'), fn)))
                 plt.close()
     print()
     df_s = pd.DataFrame()
@@ -381,7 +381,9 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th,
     for m, r, p in zip([mir_p, mir_m, mir_a], [roc_p, roc_m, roc_a], ['pos', 'neg', 'all']):
         with open(os.path.join(p_dir, '{}_{}_{}_mir.csv'.format(c_px, phe_m, p)), 'w') as o1, \
                 open(os.path.join(p_dir, '{}_{}_{}_roc.csv'.format(c_px, phe_m, p)), 'w') as o2:
-            o2.write('Feature_number,table_process,Phenotype_mir_type,ML,cv_mean,cv_std,roc_train,roc_test\n')
+            o2.write('Feature_number,table_process,Phenotype_mir_type,Classifier,10-fold cv,Training samples,ROC_AUC,'
+                     'Accuracy,Precision,Sensitivity,Specificity,Testing samples,ROC_AUC,Accuracy,Precision,'
+                     'Sensitivity,Specificity\n')
             o1.write('\n'.join(m) + '\n')
             o2.write(r + '\n')
 
@@ -564,7 +566,7 @@ def main():
                     with open(os.path.join(p_dir, '{}_{}_{}_mir.csv'.format(c_px, phe_m, c))) as in_f:
                         for line in in_f:
                             lf = line.rstrip().split(',', maxsplit=2)
-                            if 10 <= int(lf[1]) <= 30:
+                            if 5 <= int(lf[1]) <= 40:
                                 out_feature_plot(dfx, ss1, ssp, lf[2], m2c.get(phenotype), m2p.get(phenotype), p_dir,
                                                  '{}_{}_{}'.format(c_px, phe_m, c), int(lf[1]))
                                 feature_score(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'
@@ -592,7 +594,9 @@ def main():
             for m, r, p in zip([mir_p, mir_m, mir_a], [roc_p, roc_m, roc_a], ['pos', 'neg', 'all']):
                 with open(os.path.join(o_dir, 'PNI_{}_mir.csv'.format(tn)), 'w') as o1, \
                         open(os.path.join(o_dir, 'PNI_{}_roc.csv'.format(tn)), 'w') as o2:
-                    o2.write('Feature_number,table_process,Phenotype_mir_type,ML,cv_mean,cv_std,roc_train,roc_test\n')
+                    o2.write('Feature_number,table_process,Phenotype_mir_type,Classifier,10-fold cv,Training samples,'
+                             'ROC_AUC,Accuracy,Precision,Sensitivity,Specificity,Testing samples,ROC_AUC,Accuracy,'
+                             'Precision,Sensitivity,Specificity\n')
                     o1.write('\n'.join(m) + '\n')
                     o2.write(r + '\n')
 
