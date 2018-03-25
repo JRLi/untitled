@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
-import seaborn as sns
+import scipy.stats as st
 
 
 a = range(30, 56, 5)
@@ -107,6 +107,10 @@ def con_m(y_true, y_pre):
     return total, acc, sensitivity1, specificity1
 
 
+def scipy_ttest_ind(s1, s2, var):
+    return st.ttest_ind(s1, s2, equal_var=var)
+
+
 def feature_score3(dfx, ssy_n, f_string, m2c, title_n, f_number, phe):
     dfs = dfx[f_string.split(',')]
     mc_list = [float(m2c.get(x)) for x in dfs.columns]
@@ -119,20 +123,32 @@ def feature_score3(dfx, ssy_n, f_string, m2c, title_n, f_number, phe):
     df1[phe] = ssy_n
     df1 = df1.sort_values('scores')
     df1['index'] = range(1, 1 + len(ssy_n))
+    z = np.polyfit(x=df1.loc[:, 'index'], y=df1.loc[:, phe], deg=1)
+    p = np.poly1d(z)
+    df1['trend'] = p(df1.loc[:, 'index'])
+
     plt.rcParams["figure.figsize"] = [12, 16]
     fig, ax = plt.subplots(2, 1)
     df1.plot(kind='scatter', x='index', y='scores', color='b', label='mir_scores', title='{}_{}'
                   .format(title_n, f_number), ax = ax[0])
-    #ax[0].set_xlabel('rice sample index')
+    ax[0].axvline(x=45.5, color='g', linestyle=':')
+    ax[0].text(45.5, 0.5 * (df1['scores'].min() + df1['scores'].max()), 'median score', rotation=90)
     ax[0].set_ylabel('feature scores', color='b')
-    ax[0].tick_params('y', colors='b')
+    ax[0].tick_params('y')
     ax[0].grid()
-    #ax2 = ax.twinx()
     df1.plot(kind='scatter', x='index', y=phe, color='r', label='phenotype', ax=ax[1])
+    df1.plot.line(x='index', y='trend', ax=ax[1])
+    ax[1].axvline(x=45.5, color='g', linestyle=':')
+    ax[1].text(45.5, 0.5*(df1[phe].min() + df1[phe].max()), 'median score', rotation=90)
     ax[1].set_ylabel(phe, color='r')
-    ax[1].tick_params('y', colors='r')
+    ax[1].tick_params('y')
     ax[1].grid()
     plt.show()
+    ss1 = df1[phe][:45]
+    ss2 = df1[phe][-45:]
+    print(len(ss1), len(ss2))
+    print(ss1.mean(), ss2.mean())
+    print(scipy_ttest_ind(ss1, ss2, False))
 
 
 main_dir = 'E:/StringTemp/Project_Rice/test2'
