@@ -388,6 +388,59 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th,
             o2.write(r + '\n')
 
 
+def feature_score3(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, top_n):
+    o_path = os.path.join(path_o, 'feature_score')
+    prepare_output_dir(o_path)
+    pre_path = 'pos' if title_n.endswith('pos') else 'neg' if title_n.endswith('neg') else 'all'
+    pre_path2 = os.path.join(o_path, pre_path)
+    prepare_output_dir(pre_path2)
+
+    dfs = dfx[f_string.split(',')]
+    mc_list = [float(m2c.get(x)) for x in dfs.columns]
+    ssc = pd.Series(mc_list, index=dfs.columns)
+    fn_list = ['def', 'rev', 'non']
+    pv_list = []
+    for fn in fn_list:
+        ssc = ssc if fn == 'def' else ssc*(-1) if fn == 'rev' else 1
+
+        dfc = dfs * ssc
+        df1 = pd.DataFrame()
+        df1['scores'] = dfc.sum(1)
+        df1[phe] = ssy_n
+        df1 = df1.sort_values('scores')
+        df1['index'] = range(1, 1 + len(ssy_n))
+
+        z = np.polyfit(x=df1.loc[:, 'index'], y=df1.loc[:, phe], deg=1)
+        p = np.poly1d(z)
+        df1['trend'] = p(df1.loc[:, 'index'])
+
+        plt.rcParams["figure.figsize"] = [12, 16]
+        fig, ax = plt.subplots(2, 1)
+        df1.plot(kind='scatter', x='index', y='scores', color='b', label='mir_scores', title='{}_{}'
+                      .format(title_n, f_number), ax = ax[0])
+        ax[0].axvline(x=(top_n * 2 + 1)/2, color='g', linestyle=':')
+        ax[0].text((top_n * 2 + 1)/2, 0.5 * (df1['scores'].min() + df1['scores'].max()), 'median score', rotation=90)
+        ax[0].set_ylabel('feature scores', color='b')
+        ax[0].tick_params('y')
+        ax[0].grid()
+        df1.plot(kind='scatter', x='index', y=phe, color='r', label='phenotype', ax=ax[1])
+        df1.plot.line(x='index', y='trend', ax=ax[1])
+        ax[1].axvline(x=(top_n * 2 + 1)/2, color='g', linestyle=':')
+        ax[1].text((top_n * 2 + 1)/2, 0.5*(df1[phe].min() + df1[phe].max()), 'median score', rotation=90)
+        ax[1].set_ylabel(phe, color='r')
+        ax[1].tick_params('y')
+        ax[1].grid()
+        plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(title_n, f_number, fn)))
+        plt.close()
+        ss1 = df1[phe][:top_n]
+        ss2 = df1[phe][-top_n:]
+        tt, pp = scipy_ttest_ind(ss1, ss2, False)
+        pv_list.append('{},{},{},{},{}'.format(fn, ss1.mean(), ss2.mean(), pp, tt))
+    with open(os.path.join(pre_path2, '{}_{}.csv'.format(title_n, f_number)), 'w') as out_f:
+        out_f.write('type,subset1,subset2,p_value,t_statistic\n')
+        out_f.write('\n'.join(pv_list) + '\n')
+
+
 def feature_score2(df_in, path_o, title_n, f_number, phe):
     df1 = df_in.copy()
     df1 = df1.sort_values(phe)
@@ -518,10 +571,10 @@ def t_test(dfx, ssy, f_string):
 
 
 def main():
-    check1 = True
-    test1 = False
-    check2 = False
-    check3 = False
+    check1 = False
+    test1 = True
+    check2 = True
+    check3 = True
     main_dir = './'
     dfr, n_p = df_open(os.path.join(main_dir, 'wm_all_q.csv'))
     dfr = dfr.drop(['type (H)', 'waxy (H)'], axis=1)  # df2, drop all na first
@@ -569,8 +622,8 @@ def main():
                             if 5 <= int(lf[1]) <= 40:
                                 out_feature_plot(dfx, ss1, ssp, lf[2], m2c.get(phenotype), m2p.get(phenotype), p_dir,
                                                  '{}_{}_{}'.format(c_px, phe_m, c), int(lf[1]))
-                                feature_score(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'
-                                              .format(c_px, phe_m, c), int(lf[1]), phe_m)
+                                feature_score3(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'
+                                              .format(c_px, phe_m, c), int(lf[1]), phe_m, tn)
     if check3:
         print('Step 3')
         top_list = range(30, 56, 5)
