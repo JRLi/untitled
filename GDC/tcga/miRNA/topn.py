@@ -1,4 +1,4 @@
-#/usr/bin/env python3.6
+#!/usr/bin/env python3.6
 import pandas as pd
 import os
 import sys
@@ -46,7 +46,6 @@ def select_r(df_in, ss_label, f_n, tp=0):
         lg1 = LogisticRegression(penalty='l1', C=3, random_state=0)
         lg2 = LogisticRegression(random_state=0)
         svc = SVC(kernel='linear', probability=True, random_state=0)
-        #stp = 3 if tp == 0 else 1
         stp = 1
         ch = {0: rfc, 1: lg1, 2: lg2, 3: svc}
         select = RFE(ch.get(tp, rfc), n_features_to_select=f_n, step=stp)
