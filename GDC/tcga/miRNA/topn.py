@@ -104,7 +104,7 @@ def mvc(dfx_in, ssy_in, base_n, mms_c):
         plt.title('Feature selection performance: {}'.format(label))
         plt.grid()
         plt.xlabel('Feature numbers')
-        plt.xlabel('ROC AUC')
+        plt.ylabel('ROC AUC')
         plt.savefig('{}_{}'.format(base_n, label))
         plt.close()
 
