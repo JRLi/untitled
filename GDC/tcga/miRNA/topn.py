@@ -1,5 +1,6 @@
 #!/usr/bin/env python3.6
 import pandas as pd
+import numpy as np
 import os
 import sys
 import matplotlib.pyplot as plt
@@ -11,6 +12,7 @@ from sklearn.feature_selection import RFE
 from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import LeaveOneOut
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 import argparse
@@ -42,7 +44,7 @@ def df_open(path_in, direct='n'):
 
 def select_r(df_in, ss_label, f_n, tp=0):
     if len(df_in.columns) > f_n:
-        rfc = RandomForestClassifier(n_estimators=100, random_state=1)
+        rfc = RandomForestClassifier(n_estimators=10, random_state=1)
         lg1 = LogisticRegression(penalty='l1', C=3, random_state=0)
         lg2 = LogisticRegression(random_state=0)
         svc = SVC(kernel='linear', probability=True, random_state=0)
@@ -50,6 +52,8 @@ def select_r(df_in, ss_label, f_n, tp=0):
         ch = {0: rfc, 1: lg1, 2: lg2, 3: svc}
         select = RFE(ch.get(tp, rfc), n_features_to_select=f_n, step=stp)
         select.fit(df_in, ss_label)
+        if tp in [1, 2, 3]:
+            print('coefficients', select.estimator_.coef_)
         mask = select.get_support()
         x_rfe = select.transform(df_in)
         m_mir_list = df_in.columns[mask]
@@ -57,6 +61,11 @@ def select_r(df_in, ss_label, f_n, tp=0):
     else:
         f_list = df_in.columns.tolist()
         return df_in.values, f_list, len(f_list)
+
+
+def pr(dfx_in, ssy_in, base_n, mms_c):
+    dfx = dfx_in.copy()
+    ssy = ssy_in.copy()
 
 
 def mvc(dfx_in, ssy_in, base_n, mms_c):
@@ -97,10 +106,11 @@ def mvc(dfx_in, ssy_in, base_n, mms_c):
         dfg = dfg.T
         lines = ['-', ':', '-.', '--']
         colors = ['black', 'red', 'blue', 'green']
-        plt.rcParams["figure.figsize"] = [12, 9]
+        plt.rcParams["figure.figsize"] = [16, 12]
         for ct, clr, ls in zip(r_list, colors, lines):
-            plt.plot(dfg.index, dfg[ct], color=clr, linestyle=ls, label=ct)
+            plt.plot(dfg.index, dfg[ct], color=clr, linestyle=ls, marker='.', label=ct)
         plt.legend(loc='lower right')
+        plt.yticks(np.arange(0, 1.05, 0.05))
         plt.title('Feature selection performance: {}'.format(label))
         plt.grid()
         plt.xlabel('Feature numbers')
