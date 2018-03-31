@@ -12,7 +12,7 @@ from sklearn.feature_selection import RFE
 from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import LeaveOneOut
+from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 import argparse
@@ -22,6 +22,7 @@ def args_parse():
     parser = argparse.ArgumentParser(description='no')
     parser.add_argument('file', nargs='+', help="input file")
     parser.add_argument('-m', '--mms', action="store_true", help='MinMaxScaler before feature selection')
+    parser.add_argument('-c', '--cv', action='store_true', help='result is cross validation')
     args = parser.parse_args()
     return args
 
@@ -44,7 +45,7 @@ def df_open(path_in, direct='n'):
 
 def select_r(df_in, ss_label, f_n, tp=0):
     if len(df_in.columns) > f_n:
-        rfc = RandomForestClassifier(n_estimators=10, random_state=1)
+        rfc = RandomForestClassifier(n_estimators=100, random_state=1)
         lg1 = LogisticRegression(penalty='l1', C=3, random_state=0)
         lg2 = LogisticRegression(random_state=0)
         svc = SVC(kernel='linear', probability=True, random_state=0)
@@ -63,9 +64,57 @@ def select_r(df_in, ss_label, f_n, tp=0):
         return df_in.values, f_list, len(f_list)
 
 
-def pr(dfx_in, ssy_in, base_n, mms_c):
+def mvc2(dfx_in, ssy_in, base_n, mms_c):
     dfx = dfx_in.copy()
     ssy = ssy_in.copy()
+    dfx1, dfx2, ssy1, ssy2 = train_test_split(dfx, ssy, test_size=0.5, random_state=0)
+    fn_dict = {0: 'RandomForest', 1: 'LASSO', 2: 'Ridge', 3: 'SVC'}
+    r_list = []
+    f_d = defaultdict(lambda: defaultdict(dict))
+    mms = MinMaxScaler()
+    dfx1_m = pd.DataFrame(mms.fit_transform(dfx1), index=dfx1.index, columns=dfx1.columns) if mms_c else dfx1.copy()
+    print('mms:', dfx1_m.shape)
+
+    for f_n in range(1, 51):
+        print('fn: {}'.format(f_n))
+        for tp in [0, 1, 2, 3]:
+            print('f_select: {}'.format(fn_dict.get(tp)))
+            _, fs_list, _ = select_r(dfx1_m, ssy1, f_n, tp)
+            x1 = dfx1[fs_list]
+            x2 = dfx2[fs_list]
+            r_list.append(fn_dict.get(tp))
+
+            clf1 = LogisticRegression(penalty='l2', random_state=0)
+            clf2 = SVC(probability=True, random_state=0)
+            clf3 = SVC(kernel='linear', probability=True, random_state=0)
+            pipe1 = Pipeline([['sc', StandardScaler()], ['clf', clf1]])
+            pipe2 = Pipeline([['mc', MinMaxScaler()], ['clf', clf2]])
+            pipe3 = Pipeline([['sc', StandardScaler()], ['clf', clf3]])
+            all_clf = [pipe1, pipe2, pipe3]
+            clf_labels = ['Logistic_Regression', 'SVM_rbf', 'SVM_linear']
+            for clf, label in zip(all_clf, clf_labels):
+                clf.fit(x1, ssy1)
+                y_pre = clf.predict_proba(x2)[:, 1]
+                fpr, tpr, thresholds = roc_curve(y_true=ssy2, y_score=y_pre)
+                roc_auc = auc(x=fpr, y=tpr)
+                f_d[label][f_n][fn_dict.get(tp)] = roc_auc
+    for label in f_d.keys():
+        dfg = pd.DataFrame(f_d.get(label))
+        dfg.to_csv('test_{}.csv'.format(base_n))
+        dfg = dfg.T
+        lines = ['-', ':', '-.', '--']
+        colors = ['black', 'red', 'blue', 'green']
+        plt.rcParams["figure.figsize"] = [16, 12]
+        for ct, clr, ls in zip(r_list, colors, lines):
+            plt.plot(dfg.index, dfg[ct], color=clr, linestyle=ls, marker='.', label=ct)
+        plt.legend(loc='lower right')
+        plt.yticks(np.arange(0, 1.05, 0.05))
+        plt.title('Feature selection performance: {}'.format(label))
+        plt.grid()
+        plt.xlabel('Feature numbers')
+        plt.ylabel('ROC AUC')
+        plt.savefig('{}_{}'.format(base_n, label))
+        plt.close()
 
 
 def mvc(dfx_in, ssy_in, base_n, mms_c):
@@ -127,7 +176,10 @@ def main(argv=None):
             df1 = df1.loc[:, df1.columns.str.startswith('hsa-')]
             y_list = [0 if x.startswith('norm') else 1 for x in df1.index]
             ssy = pd.Series(y_list, index=df1.index)
-            mvc(df1, ssy, dfb, argv.mms)
+            if argv.cv:
+                mvc(df1, ssy, dfb, argv.mms)
+            else:
+                mvc2(df1, ssy, dfb, argv.mms)
 
 
 if __name__ == '__main__':
