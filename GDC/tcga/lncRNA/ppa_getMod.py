@@ -1,7 +1,6 @@
 #!/usr/bin/env python3.6
 """
-usage: ./ppa_getMod.py default_matrix json_file
-use shell script to perform all jason files with one default table
+usage: python -u ppa_getMod.py pc_df lnc_df ppa_out &
 """
 import sys
 import pandas as pd
@@ -27,7 +26,7 @@ def open_df(path_in, direct='n'):
 def parse_json_to_matrix(mod_file, df1, df2, f_base):
     with open(mod_file, 'r') as json_file, open('summary_of_ppa', 'a') as summary:
         sub_matrix_list = json.load(json_file)
-        m_c = 0
+        m_c, r1_c, r2_c, c_c = 0, 0, 0, 0
         for m_dict in sub_matrix_list:
             m_c += 1
             rows1_array = np.array(m_dict['rows1']) - 1
@@ -40,8 +39,11 @@ def parse_json_to_matrix(mod_file, df1, df2, f_base):
             len_c = 1 if isinstance(m_dict['columns'], int) else len(m_dict['columns'])
             df3.to_csv('mod_ppa/{}/mod{}_pc_{}x{}.csv'.format(f_base, m_c, len_r1, len_c))
             df4.to_csv('mod_ppa/{}/mod{}_lnc_{}x{}.csv'.format(f_base, m_c, len_r2, len_c))
+            r1_c += len_r1
+            r2_c += len_r2
+            c_c += len_c
             summary.write('{}\tmod{}\t{}\t{}\t{}\n'.format(f_base, m_c, len_r1, len_r2, len_c))
-        return m_c
+        return m_c, r1_c, r2_c, c_c
 
 
 def main(argv=None):
@@ -56,16 +58,17 @@ def main(argv=None):
         df1, df1_b = open_df(sys.argv[1])
         df2, df2_b = open_df(sys.argv[2])
         print("File1: {}\nFile2: {}".format(df1_b, df2_b))
-        mod_c, mod_all = 0, 0
-        for mod_file in f_list:
-            mod_c += 1
-            m_path = os.path.join(sys.argv[3], mod_file)
-            js_base, js_ext = os.path.splitext(mod_file)
-            prepare_output_dir('mod_ppa/{}'.format(js_base))
-            mod_ic = parse_json_to_matrix(m_path, df1, df2, js_base)
-            mod_all += mod_ic
-            print('{}\t{}'.format(mod_ic, js_base))
-        print('mod_file_processed:\t{}\nall_mod_count:\t{}'.format(mod_c, mod_all))
+        with open('mean_summary', 'w') as out_f:
+            mod_c, mod_all = 0, 0
+            for mod_file in f_list:
+                mod_c += 1
+                m_path = os.path.join(sys.argv[3], mod_file)
+                js_base, js_ext = os.path.splitext(mod_file)
+                prepare_output_dir('mod_ppa/{}'.format(js_base))
+                m_ic, r1, r2, cc = parse_json_to_matrix(m_path, df1, df2, js_base)
+                mod_all += m_ic
+                out_f.write('{}\t{}\t{:.2f}\t{:.2f}\t{:.2f}\n'.format(js_base, m_ic, r1/m_ic, r2/m_ic, cc/m_ic))
+            print('mod_file_processed:\t{}\nall_mod_count:\t{}'.format(mod_c, mod_all))
 
 
 if __name__ == "__main__":
