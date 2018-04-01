@@ -141,16 +141,17 @@ def p_dict_get(path_in, p_t):
 
 
 def select_r(df_in, ss_label, f_n, eps):
-    if len(df_in.columns) > f_n:
+    dfx = df_in.copy()
+    if len(dfx.columns) > f_n:
         select = RFE(RandomForestClassifier(n_estimators=eps, random_state=1), n_features_to_select=f_n)
-        select.fit(df_in, ss_label)
+        select.fit(dfx, ss_label)
         mask = select.get_support()
-        x_rfe = select.transform(df_in)
-        m_mir_list = df_in.columns[mask]
+        x_rfe = select.transform(dfx)
+        m_mir_list = dfx.columns[mask]
         return x_rfe, ','.join(m_mir_list), len(m_mir_list)
     else:
-        f_list = df_in.columns.tolist()
-        return df_in.values, ','.join(f_list), len(f_list)
+        f_list = dfx.columns.tolist()
+        return dfx.values, ','.join(f_list), len(f_list)
 
 
 def fn_check_plot(df_in, path_o, title_n):
@@ -177,6 +178,86 @@ def fn_check_plot(df_in, path_o, title_n):
         f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
         plt.savefig(os.path.join(o_dir, '{}_{}'.format(f_name, t.replace(' ', '_'))))
         plt.close()
+
+
+def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
+    plt.rcParams["figure.figsize"] = [22, 16]
+    fig, ax = plt.subplots(3, 3)
+    i, j = 0, 0
+    for tn in range(30, 56, 5):
+        print('[top {}]'.format(tn))
+        ss1 = s_top_gt(ss_y, tn, True)
+        dfx = df_xi.loc[ss1.index, :]
+        fn_list, l_tr_list, l_cv_list, l_ts_list = [], [], [], []
+        ml_tr_list, ml_cv_list, ml_ts_list = [], [], []
+        print('Now running F_number:')
+        for fn in range(1, f_number + 1):
+            print(fn, end=',')
+            fn_list.append(fn)
+            x, feature_string, f_l = select_r(dfx, ss1, fn, eps)
+            x_train, x_test, y_train, y_test = train_test_split(x, ss1, test_size=ts, random_state=1)
+            clf1 = LogisticRegression(penalty='l2', C=0.001, random_state=0)
+            clf3 = SVC(kernel='linear', probability=True, random_state=0)
+            pipe1 = Pipeline([['sc', StandardScaler()], ['clf', clf1]])
+            pipe3 = Pipeline([['sc', StandardScaler()], ['clf', clf3]])
+            all_clf = [pipe1, pipe3]
+            clf_labels = ['Logistic Regression', 'SVM linear']
+            cv = x_train.shape[0] if df_cv > x_train.shape[0] else df_cv
+            for clf, label in zip(all_clf, clf_labels):
+                cv_roc = cross_val_score(estimator=clf, X=x, y=ss1, cv=cv, scoring='roc_auc')
+                clf.fit(x_train, y_train)
+                y_pre_tr = clf.predict_proba(x_train)[:, 1]
+                y_pre_ts = clf.predict_proba(x_test)[:, 1]
+                fpr_tr, tpr_tr, thresholds_tr = roc_curve(y_true=y_train, y_score=y_pre_tr)
+                fpr, tpr, thresholds = roc_curve(y_true=y_test, y_score=y_pre_ts)
+                roc_auc_tr = auc(x=fpr_tr, y=tpr_tr)
+                roc_auc = auc(x=fpr, y=tpr)
+                if label == 'Logistic Regression':
+                    l_cv_list.append(cv_roc.mean())
+                    l_tr_list.append(roc_auc_tr)
+                    l_ts_list.append(roc_auc)
+                else:
+                    ml_cv_list.append(cv_roc.mean())
+                    ml_tr_list.append(roc_auc_tr)
+                    ml_ts_list.append(roc_auc)
+        print()
+        df_s = pd.DataFrame()
+        df_s['mir_number'] = pd.Series(fn_list)
+        df_s['lr_cv10_roc'] = pd.Series(l_cv_list)
+        df_s['lr_train_roc'] = pd.Series(l_tr_list)
+        df_s['lr_test_roc'] = pd.Series(l_ts_list)
+        df_s['svl_cv10_roc'] = pd.Series(ml_cv_list)
+        df_s['svl_train_roc'] = pd.Series(ml_tr_list)
+        df_s['svl_test_roc'] = pd.Series(ml_ts_list)
+        lines = [':', '-.', '--']
+        colors = ['red', 'blue', 'green']
+        col_l = ['lr_cv10_roc', 'lr_train_roc', 'lr_test_roc']
+
+        for ct, ls, clr in zip(col_l, lines, colors):
+            ax[j, i].plot(df_s['mir_number'], df_s[ct], color=clr, linestyle=ls, label='Logistic Regression {}'.
+                          format(ct.split('_', 1)[1]))
+        ax[j, i].legend(loc='lower right')
+        ax[j, i].set_title('Logistic Regression: Top[{}]'.format(tn))
+        ax[j, i].grid()
+        ax[j, i].set_xlabel('Feature numbers')
+        ax[j, i].set_ylabel('ROC AUC')
+
+        if tn in [45, 50, 55]:
+            col_s = ['svl_cv10_roc', 'svl_train_roc', 'svl_test_roc']
+            for ct, ls, clr in zip(col_s, lines, colors):
+                ax[2, i].plot(df_s['mir_number'], df_s[ct], color=clr, linestyle=ls, label='Linear SVM {}'.
+                              format(ct.split('_', 1)[1]))
+                ax[2, i].legend(loc='lower right')
+                ax[2, i].set_title('Linear SVM: Top[]'.format(tn))
+                ax[2, i].grid()
+                ax[2, i].set_xlabel('Feature numbers')
+                ax[2, i].set_ylabel('ROC AUC')
+        i += 1
+        if i == 3:
+            j += 1
+            i = 0
+    plt.savefig(os.path.join(out_path, title_n))
+    plt.close()
 
 
 def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
@@ -417,7 +498,7 @@ def feature_score3(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
         plt.rcParams["figure.figsize"] = [12, 16]
         fig, ax = plt.subplots(2, 1)
         df1.plot(kind='scatter', x='index', y='scores', color='b', label='mir_scores', title='{}_{}'
-                      .format(title_n, f_number), ax = ax[0])
+                      .format(title_n, f_number), ax=ax[0])
         ax[0].axvline(x=(top_n * 2 + 1)/2, color='g', linestyle=':')
         ax[0].text((top_n * 2 + 1)/2, 0.5 * (df1['scores'].min() + df1['scores'].max()), 'median score', rotation=90)
         ax[0].set_ylabel('feature scores', color='b')
@@ -573,7 +654,7 @@ def t_test(dfx, ssy, f_string):
 def main():
     check1 = False
     test1 = True
-    check2 = True
+    check2 = False
     check3 = True
     main_dir = './'
     dfr, n_p = df_open(os.path.join(main_dir, 'wm_all_q.csv'))
@@ -592,11 +673,11 @@ def main():
         c_list = ['Panicle Number (I)'] if test1 else dfp2.columns
         for phenotype_r in c_list:
             print('Phenotype: {}'.format(phenotype_r))
-            #pn(dfm, dfp, main_dir, phenotype_r, 'wmq', 'no_drop', ct, tn, th, fn)
+            # pn(dfm, dfp, main_dir, phenotype_r, 'wmq', 'no_drop', ct, tn, th, fn)
             pn(dfm2, dfp2, main_dir, phenotype_r, 'wmq', 'drop', ct, tn, th, fn)
     if check2:
         print('Step 2')
-        #d_list = ['drop', 'no_drop']
+        # d_list = ['drop', 'no_drop']
         d_list = ['drop']
         c_list = ['Panicle Number (I)'] if test1 else dfp2.columns
         for n in d_list:
@@ -622,36 +703,23 @@ def main():
                             if 5 <= int(lf[1]) <= 40:
                                 out_feature_plot(dfx, ss1, ssp, lf[2], m2c.get(phenotype), m2p.get(phenotype), p_dir,
                                                  '{}_{}_{}'.format(c_px, phe_m, c), int(lf[1]))
-                                feature_score3(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'
-                                              .format(c_px, phe_m, c), int(lf[1]), phe_m, tn)
+                                feature_score3(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'.
+                                               format(c_px, phe_m, c), int(lf[1]), phe_m, tn)
     if check3:
         print('Step 3')
-        top_list = range(30, 56, 5)
         o_dir = './n_test'
         prepare_output_dir(o_dir)
         c_path = os.path.join(o_dir, 'wmq_corT50.csv')
         if not os.path.exists(c_path):
             df_c, df_p = rice_corr(dfm2, dfp2, 50, 'pearson')
             extract_rc(c_path, df_c, locate(df_c, 'c', 0.01), 'correlation')
+        p2gp, p2gm, m2c = cor_dict_get(c_path, 0.15)
         ssp = dfp2['Panicle Number (I)']
-        for tn in top_list:
-            print('[top {}]'.format(tn))
-            ss1 = s_top_gt(ssp, tn, True)
-            p2gp, p2gm, m2c = cor_dict_get(c_path, 0.15)
-            df_mp = dfm2.loc[ss1.index, p2gp.get('Panicle Number (I)')]
-            df_mm = dfm2.loc[ss1.index, p2gm.get('Panicle Number (I)')]
-            df_ma = pd.concat([df_mp, df_mm], 1)
-            mir_p, roc_p = mvc(df_mp, ss1, 'PNI_{}_pos'.format(tn), o_dir, 0.4, fn, 300, 10)
-            mir_m, roc_m = mvc(df_mm, ss1, 'PNI_{}_neg'.format(tn), o_dir, 0.4, fn, 300, 10)
-            mir_a, roc_a = mvc(df_ma, ss1, 'PNI_{}_all'.format(tn), o_dir, 0.4, fn, 300, 10)
-            for m, r, p in zip([mir_p, mir_m, mir_a], [roc_p, roc_m, roc_a], ['pos', 'neg', 'all']):
-                with open(os.path.join(o_dir, 'PNI_{}_mir.csv'.format(tn)), 'w') as o1, \
-                        open(os.path.join(o_dir, 'PNI_{}_roc.csv'.format(tn)), 'w') as o2:
-                    o2.write('Feature_number,table_process,Phenotype_mir_type,Classifier,10-fold cv,Training samples,'
-                             'ROC_AUC,Accuracy,Precision,Sensitivity,Specificity,Testing samples,ROC_AUC,Accuracy,'
-                             'Precision,Sensitivity,Specificity\n')
-                    o1.write('\n'.join(m) + '\n')
-                    o2.write(r + '\n')
+        df_mp = dfm2.loc[:, p2gp.get('Panicle Number (I)')]
+        df_mm = dfm2.loc[:, p2gm.get('Panicle Number (I)')]
+        df_ma = pd.concat([df_mp, df_mm], 1)
+        top_n_test(df_mm, ssp, 'Panicle_Number_I_negative', o_dir, 0.4, fn, 300, 10)
+        top_n_test(df_ma, ssp, 'Panicle_Number_I_all', o_dir, 0.4, fn, 300, 10)
 
 
 if __name__ == '__main__':
