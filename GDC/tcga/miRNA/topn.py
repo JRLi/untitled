@@ -113,6 +113,7 @@ def mvc2(dfx_in, ssy_in, base_n, mms_c):
         plt.grid()
         plt.xlabel('Feature numbers')
         plt.ylabel('ROC AUC')
+        plt.tight_layout()
         plt.savefig('{}_{}'.format(base_n, label))
         plt.close()
 
@@ -164,6 +165,7 @@ def mvc(dfx_in, ssy_in, base_n, mms_c):
         plt.grid()
         plt.xlabel('Feature numbers')
         plt.ylabel('ROC AUC')
+        plt.tight_layout()
         plt.savefig('{}_{}'.format(base_n, label))
         plt.close()
 
