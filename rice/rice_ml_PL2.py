@@ -5,7 +5,6 @@ import scipy.stats as st
 import os
 import math
 import matplotlib.pyplot as plt
-import matplotlib.ticker as plticker
 from numpy import interp
 from collections import defaultdict
 from sklearn import metrics
@@ -104,9 +103,9 @@ def con_m(y_true, y_pre):
     print(cm)
     print(total)
     acc = (cm[0, 0] + cm[1, 1]) / total
-    sensitivity1 = cm[0, 0] / (cm[0, 0] + cm[0, 1])
-    specificity1 = cm[1, 1] / (cm[1, 0] + cm[1, 1])
-    precision1 = cm[0, 0] / (cm[0, 0] + cm[1, 0])
+    sensitivity1 = cm[1, 1] / (cm[1, 1] + cm[1, 0])
+    specificity1 = cm[0, 0] / (cm[0, 0] + cm[0, 1])
+    precision1 = cm[1, 1] / (cm[1, 1] + cm[0, 1])
     print('Accuracy : ', acc)
     print('Sensitivity (recall) : ', sensitivity1)
     print('Specificity : ', specificity1)
@@ -156,17 +155,14 @@ def select_r(df_in, ss_label, f_n, eps):
 
 def fn_check_plot(df_in, path_o, title_n):
     l_path = os.path.join(path_o, 'roc_lg')
-    m_path = os.path.join(path_o, 'roc_svm')
     ml_path = os.path.join(path_o, 'roc_svmL')
     prepare_output_dir(l_path)
-    prepare_output_dir(m_path)
     prepare_output_dir(ml_path)
     df1 = df_in.copy()
-    for t, o_dir in zip(['Logistic Regression', 'SVM RBF', 'SVM Linear'], [l_path, m_path, ml_path]):
+    for t, o_dir in zip(['Logistic Regression', 'SVM Linear'], [l_path, ml_path]):
         lines = [':', '-.', '--']
         colors = ['red', 'blue', 'green']
         col_l = ['lr_cv10_roc', 'lr_train_roc', 'lr_test_roc'] if t == 'Logistic Regression' \
-            else ['svm_cv10_roc', 'svm_train_roc', 'svm_test_roc'] if t == 'SVM RBF' \
             else ['svl_cv10_roc', 'svl_train_roc', 'svl_test_roc']
         for ct, ls, clr in zip(col_l, lines, colors):
             plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{}_{}'.format(t, ct.split('_', 1)[1]))
@@ -176,6 +172,7 @@ def fn_check_plot(df_in, path_o, title_n):
         plt.xticks(np.arange(0, max(df1['mir_number']) + 1, 5))
         plt.xlabel('Feature numbers')
         f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
+        plt.tight_layout()
         plt.savefig(os.path.join(o_dir, '{}_{}'.format(f_name, t.replace(' ', '_'))))
         plt.close()
 
@@ -184,6 +181,7 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     plt.rcParams["figure.figsize"] = [22, 16]
     fig, ax = plt.subplots(3, 3)
     i, j = 0, 0
+    list_45l = []
     for tn in range(30, 56, 5):
         print('[top {}]'.format(tn))
         ss1 = s_top_gt(ss_y, tn, True)
@@ -220,6 +218,8 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                     ml_cv_list.append(cv_roc.mean())
                     ml_tr_list.append(roc_auc_tr)
                     ml_ts_list.append(roc_auc)
+        if tn == 45:
+            list_45l += l_ts_list
         print()
         df_s = pd.DataFrame()
         df_s['mir_number'] = pd.Series(fn_list)
@@ -241,6 +241,7 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
         ax[j, i].grid()
         ax[j, i].set_xlabel('Feature numbers')
         ax[j, i].set_ylabel('ROC AUC')
+        ax[j, i].set_yticks(np.arange(0.5, 1.05, 0.05))
 
         if tn in [45, 50, 55]:
             col_s = ['svl_cv10_roc', 'svl_train_roc', 'svl_test_roc']
@@ -248,16 +249,19 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 ax[2, i].plot(df_s['mir_number'], df_s[ct], color=clr, linestyle=ls, label='Linear SVM {}'.
                               format(ct.split('_', 1)[1]))
                 ax[2, i].legend(loc='lower right')
-                ax[2, i].set_title('Linear SVM: Top[]'.format(tn))
+                ax[2, i].set_title('Linear SVM: Top[{}]'.format(tn))
                 ax[2, i].grid()
                 ax[2, i].set_xlabel('Feature numbers')
                 ax[2, i].set_ylabel('ROC AUC')
+                ax[2, i].set_yticks(np.arange(0.0, 1.05, 0.05))
         i += 1
         if i == 3:
             j += 1
             i = 0
+    plt.tight_layout()
     plt.savefig(os.path.join(out_path, title_n))
     plt.close()
+    return list_45l
 
 
 def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
@@ -278,26 +282,24 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
         tmp1_list.append('{},{},{}'.format(fn, f_l, feature_string))
         x_train, x_test, y_train, y_test = train_test_split(x, ss_y, test_size=ts, random_state=1)
         clf1 = LogisticRegression(penalty='l2', C=0.001, random_state=0)
-        clf2 = SVC(probability=True, random_state=0)
         clf3 = SVC(kernel='linear', probability=True, random_state=0)
         pipe1 = Pipeline([['sc', StandardScaler()], ['clf', clf1]])
-        pipe2 = Pipeline([['mc', MinMaxScaler()], ['clf', clf2]])
-        pipe3 = Pipeline([['sc', StandardScaler()], ['clf', clf3]])
-        all_clf = [pipe1, pipe2, pipe3]
-        clf_labels = ['Logistic Regression', 'SVM rbf', 'SVM linear']
+        pipe3 = Pipeline([['mc', MinMaxScaler()], ['clf', clf3]])
+        all_clf = [pipe1, pipe3]
+        clf_labels = ['Logistic Regression', 'SVM linear']
         cv = x_train.shape[0] if df_cv > x_train.shape[0] else df_cv
         for clf, label in zip(all_clf, clf_labels):
             cv_roc = cross_val_score(estimator=clf, X=x, y=ss_y, cv=cv, scoring='roc_auc')
             lf = title_n.split('_')
             clf.fit(x_train, y_train)
-            n_tr, acc_tr, sen_tr, spe_tr, pre_tr = con_m(y_train, clf.predict(x_train))
-            n_ts, acc_ts, sen_ts, spe_ts, pre_ts = con_m(y_test, clf.predict(x_test))
             y_pre_tr = clf.predict_proba(x_train)[:, 1]
             y_pre_ts = clf.predict_proba(x_test)[:, 1]
             fpr_tr, tpr_tr, thresholds_tr = roc_curve(y_true=y_train, y_score=y_pre_tr)
             fpr, tpr, thresholds = roc_curve(y_true=y_test, y_score=y_pre_ts)
             roc_auc_tr = auc(x=fpr_tr, y=tpr_tr)
             roc_auc = auc(x=fpr, y=tpr)
+            n_tr, acc_tr, sen_tr, spe_tr, pre_tr = con_m(y_train, clf.predict(x_train))
+            n_ts, acc_ts, sen_ts, spe_ts, pre_ts = con_m(y_test, clf.predict(x_test))
             tmp2_list.append('{},{},{},[{}],{:.2f} +/- {:.2f},{},{},{},{},{},{},{},{},{},{},{},{}'.
                              format(f_l, '_'.join(lf[0:3]), '_'.join(lf[3:]), label, cv_roc.mean(), cv_roc.std(), n_tr,
                                     roc_auc_tr, acc_tr, pre_tr, sen_tr, spe_tr, n_ts, roc_auc, acc_ts, pre_ts, sen_ts,
@@ -306,21 +308,16 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 l_cv_list.append(cv_roc.mean())
                 l_tr_list.append(roc_auc_tr)
                 l_ts_list.append(roc_auc)
-            elif label == 'SVM rbf':
-                m_cv_list.append(cv_roc.mean())
-                m_tr_list.append(roc_auc_tr)
-                m_ts_list.append(roc_auc)
             else:
                 ml_cv_list.append(cv_roc.mean())
                 ml_tr_list.append(roc_auc_tr)
                 ml_ts_list.append(roc_auc)
-            if fn in [5, 10, 15, 20, 25, 30]:
+            if fn >= 15:
                 nx = x.copy()
                 ny = ss_y.values
                 cvf = StratifiedKFold(n_splits=cv)
                 tprs, aucs = [], []
                 mean_fpr = np.linspace(0, 1, 100)
-                j = 0
                 plt.rcParams["figure.figsize"] = [12, 9]
                 for train, test in cvf.split(nx, ny):
                     md = clf.fit(nx[train], ny[train])
@@ -330,9 +327,6 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                     tprs[-1][0] = 0.0
                     roc_auc_cv = metrics.auc(fpr_cv, tpr_cv)
                     aucs.append(roc_auc_cv)
-                    plt.plot(fpr_cv, tpr_cv, lw=1, alpha=0.3, label='{} fold {} (AUC = {:.2f})'
-                             .format(label, j, roc_auc_cv))
-                    j += 1
                 mean_tpr = np.mean(tprs, axis=0)
                 mean_tpr[-1] = 1.0
                 mean_auc = metrics.auc(mean_fpr, mean_tpr)
@@ -340,9 +334,9 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 plt.plot(mean_fpr, mean_tpr, color='b', label=r'CV Mean ROC (AUC = %0.2f $\pm$ %0.2f)' %
                                                               (mean_auc, std_auc), lw=2, alpha=.8)
                 std_tpr = np.std(tprs, axis=0)
-                tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-                tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-                plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2, label=r'$\pm$ 1 std. dev.')
+                # tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+                # tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+                # plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2, label=r'$\pm$ 1 std. dev.')
                 plt.plot(fpr, tpr, color='r', linestyle=':', label='{} Test (AUC = {:.2f})'.format(label, roc_auc),
                          lw=2, alpha=.8)
                 plt.plot(fpr_tr, tpr_tr, color='g', linestyle='-.', label='{} Train (auc = {:.2f})'
@@ -356,6 +350,7 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 plt.xlabel('False Positive Rate (1 - Specificity)')
                 plt.ylabel('True Positive Rate (Sensitivity)')
                 f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
+                plt.tight_layout()
                 plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(f_name, label.replace(' ', '_'), fn)))
                 plt.close()
     print()
@@ -364,9 +359,6 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     df_s['lr_cv10_roc'] = pd.Series(l_cv_list)
     df_s['lr_train_roc'] = pd.Series(l_tr_list)
     df_s['lr_test_roc'] = pd.Series(l_ts_list)
-    df_s['svm_cv10_roc'] = pd.Series(m_cv_list)
-    df_s['svm_train_roc'] = pd.Series(m_tr_list)
-    df_s['svm_test_roc'] = pd.Series(m_ts_list)
     df_s['svl_cv10_roc'] = pd.Series(ml_cv_list)
     df_s['svl_train_roc'] = pd.Series(ml_tr_list)
     df_s['svl_test_roc'] = pd.Series(ml_ts_list)
@@ -403,6 +395,7 @@ def plot_tt(dfm_in, ssp_in, ssp, path_o, phe, suf, rs=0):
     ss_test.plot(color='b', linestyle='-.', label='test')
     ap.axhline(y=ssp.mean(), color='r', linestyle='--', label='mean')
     plt.legend(loc='lower right')
+    plt.tight_layout()
     plt.savefig(os.path.join(o_dir, '{}_{}_rs{}_1'.format(phe, suf, rs)))
     plt.close()
 
@@ -424,6 +417,7 @@ def plot_tt(dfm_in, ssp_in, ssp, path_o, phe, suf, rs=0):
     plt.grid()
     plt.xlabel('rice sample index')
     plt.ylabel(phe)
+    plt.tight_layout()
     plt.savefig(os.path.join(o_dir, '{}_{}_rs{}_2'.format(phe, suf, rs)))
     plt.close()
 
@@ -469,6 +463,77 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th,
             o2.write(r + '\n')
 
 
+def feature_score4(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, top_n):
+    o_path = os.path.join(path_o, 'feature_score')
+    prepare_output_dir(o_path)
+    pre_path = 'pos' if title_n.endswith('pos') else 'neg' if title_n.endswith('neg') else 'all'
+    pre_path2 = os.path.join(o_path, pre_path)
+    prepare_output_dir(pre_path2)
+    t_path = os.path.join(path_o, 'ttest_check')
+    prepare_output_dir(t_path)
+
+    dfs = dfx[f_string.split(',')]
+    mc_list = [float(m2c.get(x)) for x in dfs.columns]
+    ssc = pd.Series(mc_list, index=dfs.columns)
+    fn_list = ['def', 'rev', 'non']
+    pv_list = []
+    for fn in fn_list:
+        ssc = ssc if fn == 'def' else ssc*(-1) if fn == 'rev' else 1
+
+        dfc = dfs * ssc
+        df1 = pd.DataFrame()
+        df1['scores'] = dfc.sum(1)
+        df1[phe] = ssy_n
+        df1 = df1.sort_values('scores')
+        df1['index'] = range(1, 1 + len(ssy_n))
+
+        z = np.polyfit(x=df1.loc[:, 'index'], y=df1.loc[:, phe], deg=1)
+        p = np.poly1d(z)
+        df1['trend'] = p(df1.loc[:, 'index'])
+
+        plt.rcParams["figure.figsize"] = [12, 16]
+        fig, ax = plt.subplots(2, 1)
+        df1.plot(kind='scatter', x='index', y='scores', color='b', label='mir_scores', title='{}_{}'
+                      .format(title_n, f_number), ax=ax[0])
+        ax[0].axvline(x=(top_n * 2) / 3 + 0.5, color='g', linestyle=':')
+        ax[0].axvline(x=(top_n * 4) / 3 + 0.5, color='g', linestyle=':')
+        ax[0].text((top_n * 2) / 3 + 0.5, 0.5 * (df1['scores'].min() + df1['scores'].max()), '1/3 score', rotation=90)
+        ax[0].text((top_n * 4) / 3 + 0.5, 0.5 * (df1['scores'].min() + df1['scores'].max()), '2/3 score', rotation=90)
+        ax[0].set_ylabel('feature scores', color='b')
+        ax[0].tick_params('y')
+        ax[0].grid()
+        df1.plot(kind='scatter', x='index', y=phe, color='r', label='phenotype', ax=ax[1])
+        df1.plot.line(x='index', y='trend', ax=ax[1])
+        ax[1].axvline(x=(top_n * 2) / 3 + 0.5, color='g', linestyle=':')
+        ax[1].axvline(x=(top_n * 4) / 3 + 0.5, color='g', linestyle=':')
+        ax[1].text((top_n * 2) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), '1/3 score', rotation=90)
+        ax[1].text((top_n * 4) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), '2/3 score', rotation=90)
+        ax[1].set_ylabel(phe, color='r')
+        ax[1].tick_params('y')
+        ax[1].grid()
+        plt.tight_layout()
+        plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(title_n, f_number, fn)))
+        plt.close()
+        ss1 = df1[phe][:30]
+        ss2 = df1[phe][30:60]
+        ss3 = df1[phe][60:]
+        if title_n.endswith('neg'):
+            df_ss = pd.DataFrame()
+            df_ss['part1'] = ss1.values
+            df_ss['part2'] = ss2.values
+            df_ss['part3'] = ss3.values
+            df_ss.to_csv(os.path.join(t_path, '{}_{}_{}.csv'.format(title_n, f_number, fn)))
+        tt1, pp1 = scipy_ttest_ind(ss1, ss2, False)
+        tt2, pp2 = scipy_ttest_ind(ss2, ss3, False)
+        tt3, pp3 = scipy_ttest_ind(ss1, ss3, False)
+        pv_list.append('{}p1p2,{},{},{}'.format(fn, ss1.mean(), ss2.mean(), pp1))
+        pv_list.append('{}p2p3,{},{},{}'.format(fn, ss2.mean(), ss3.mean(), pp2))
+        pv_list.append('{}p1p3,{},{},{}'.format(fn, ss1.mean(), ss3.mean(), pp3))
+    with open(os.path.join(pre_path2, '{}_{}.csv'.format(title_n, f_number)), 'w') as out_f:
+        out_f.write('type,subset1,subset2,p_value\n')
+        out_f.write('\n'.join(pv_list) + '\n')
+
+
 def feature_score3(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, top_n):
     o_path = os.path.join(path_o, 'feature_score')
     prepare_output_dir(o_path)
@@ -511,8 +576,11 @@ def feature_score3(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
         ax[1].set_ylabel(phe, color='r')
         ax[1].tick_params('y')
         ax[1].grid()
+        plt.tight_layout()
         plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(title_n, f_number, fn)))
         plt.close()
+        if fn == 'non':
+            df1.to_csv(os.path.join(pre_path2, '{}_{}_{}z.csv'.format(title_n, f_number, fn)))
         ss1 = df1[phe][:top_n]
         ss2 = df1[phe][-top_n:]
         tt, pp = scipy_ttest_ind(ss1, ss2, False)
@@ -543,6 +611,7 @@ def feature_score2(df_in, path_o, title_n, f_number, phe):
     ax2.tick_params('y', colors='b')
     ax2.legend(loc=9)
     plt.grid()
+    plt.tight_layout()
     plt.savefig(os.path.join(pre_path2, '{}_{}_v2'.format(title_n, f_number)))
     plt.close()
 
@@ -581,6 +650,7 @@ def feature_score(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe):
     ax2.tick_params('y', colors='r')
     ax2.legend(loc=9)
     plt.grid()
+    plt.tight_layout()
     plt.savefig(os.path.join(pre_path2, '{}_{}'.format(title_n, f_number)))
     plt.close()
 
@@ -651,10 +721,31 @@ def t_test(dfx, ssy, f_string):
     return df1
 
 
+def plot_f50_nap(n_l, a_l, p_l, path_o):
+    df1 = pd.DataFrame()
+    df1['mir_number'] = pd.Series(list(range(1, 50)))
+    df1['negative'] = pd.Series(n_l)
+    df1['all'] = pd.Series(a_l)
+    df1['positive'] = pd.Series(p_l)
+    lines = ['-.', ':', '--']
+    colors = ['blue', 'red', 'green']
+    col_l = ['negative', 'all', 'positive']
+    for ct, ls, clr in zip(col_l, lines, colors):
+        plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{} ROC AUC'.format(ct))
+    plt.legend(loc='lower right')
+    plt.title('Logistic regression of all, positive, and negative correlation miRNAs')
+    plt.grid()
+    plt.xticks(np.arange(0, max(df1['mir_number']) + 1, 5))
+    plt.xlabel('Feature numbers')
+    plt.tight_layout()
+    plt.savefig(os.path.join(path_o, 'miRNA_comparison'))
+    plt.close()
+
+
 def main():
-    check1 = False
+    check1 = True
     test1 = True
-    check2 = False
+    check2 = True
     check3 = True
     main_dir = './'
     dfr, n_p = df_open(os.path.join(main_dir, 'wm_all_q.csv'))
@@ -703,7 +794,7 @@ def main():
                             if 5 <= int(lf[1]) <= 40:
                                 out_feature_plot(dfx, ss1, ssp, lf[2], m2c.get(phenotype), m2p.get(phenotype), p_dir,
                                                  '{}_{}_{}'.format(c_px, phe_m, c), int(lf[1]))
-                                feature_score3(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'.
+                                feature_score4(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'.
                                                format(c_px, phe_m, c), int(lf[1]), phe_m, tn)
     if check3:
         print('Step 3')
@@ -718,8 +809,10 @@ def main():
         df_mp = dfm2.loc[:, p2gp.get('Panicle Number (I)')]
         df_mm = dfm2.loc[:, p2gm.get('Panicle Number (I)')]
         df_ma = pd.concat([df_mp, df_mm], 1)
-        top_n_test(df_mm, ssp, 'Panicle_Number_I_negative', o_dir, 0.4, fn, 300, 10)
-        top_n_test(df_ma, ssp, 'Panicle_Number_I_all', o_dir, 0.4, fn, 300, 10)
+        neg_45s = top_n_test(df_mm, ssp, 'Panicle_Number_I_negative', o_dir, 0.4, fn, 300, 10)
+        all_45s = top_n_test(df_ma, ssp, 'Panicle_Number_I_all', o_dir, 0.4, fn, 300, 10)
+        pos_45s = top_n_test(df_mp, ssp, 'Panicle_Number_I_positive', o_dir, 0.4, fn, 300, 10)
+        plot_f50_nap(neg_45s, all_45s, pos_45s, o_dir)
 
 
 if __name__ == '__main__':
