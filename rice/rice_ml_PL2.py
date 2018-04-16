@@ -181,7 +181,7 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     plt.rcParams["figure.figsize"] = [22, 16]
     fig, ax = plt.subplots(3, 3)
     i, j = 0, 0
-    list_45l = []
+    list_45l, list_50l = [], []
     for tn in range(30, 56, 5):
         print('[top {}]'.format(tn))
         ss1 = s_top_gt(ss_y, tn, True)
@@ -220,6 +220,8 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                     ml_ts_list.append(roc_auc)
         if tn == 45:
             list_45l += l_ts_list
+        if tn == 50:
+            list_50l += l_ts_list
         print()
         df_s = pd.DataFrame()
         df_s['mir_number'] = pd.Series(fn_list)
@@ -241,7 +243,7 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
         ax[j, i].grid()
         ax[j, i].set_xlabel('Feature numbers')
         ax[j, i].set_ylabel('ROC AUC')
-        ax[j, i].set_yticks(np.arange(0.5, 1.05, 0.05))
+        ax[j, i].set_yticks(np.arange(0.0, 1.05, 0.1))
 
         if tn in [45, 50, 55]:
             col_s = ['svl_cv10_roc', 'svl_train_roc', 'svl_test_roc']
@@ -253,7 +255,7 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 ax[2, i].grid()
                 ax[2, i].set_xlabel('Feature numbers')
                 ax[2, i].set_ylabel('ROC AUC')
-                ax[2, i].set_yticks(np.arange(0.0, 1.05, 0.05))
+                ax[2, i].set_yticks(np.arange(0.0, 1.05, 0.1))
         i += 1
         if i == 3:
             j += 1
@@ -261,7 +263,7 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     plt.tight_layout()
     plt.savefig(os.path.join(out_path, title_n))
     plt.close()
-    return list_45l
+    return list_45l, list_50l
 
 
 def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
@@ -469,8 +471,6 @@ def feature_score4(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
     pre_path = 'pos' if title_n.endswith('pos') else 'neg' if title_n.endswith('neg') else 'all'
     pre_path2 = os.path.join(o_path, pre_path)
     prepare_output_dir(pre_path2)
-    t_path = os.path.join(path_o, 'ttest_check')
-    prepare_output_dir(t_path)
 
     dfs = dfx[f_string.split(',')]
     mc_list = [float(m2c.get(x)) for x in dfs.columns]
@@ -506,23 +506,19 @@ def feature_score4(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
         df1.plot.line(x='index', y='trend', ax=ax[1])
         ax[1].axvline(x=(top_n * 2) / 3 + 0.5, color='g', linestyle=':')
         ax[1].axvline(x=(top_n * 4) / 3 + 0.5, color='g', linestyle=':')
-        ax[1].text((top_n * 2) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), '1/3 score', rotation=90)
-        ax[1].text((top_n * 4) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), '2/3 score', rotation=90)
+        ax[1].text((top_n * 2) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), 'demarcation 1', rotation=90)
+        ax[1].text((top_n * 4) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), 'demarcation 2', rotation=90)
         ax[1].set_ylabel(phe, color='r')
         ax[1].tick_params('y')
         ax[1].grid()
         plt.tight_layout()
         plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(title_n, f_number, fn)))
         plt.close()
-        ss1 = df1[phe][:30]
-        ss2 = df1[phe][30:60]
-        ss3 = df1[phe][60:]
-        if title_n.endswith('neg'):
-            df_ss = pd.DataFrame()
-            df_ss['part1'] = ss1.values
-            df_ss['part2'] = ss2.values
-            df_ss['part3'] = ss3.values
-            df_ss.to_csv(os.path.join(t_path, '{}_{}_{}.csv'.format(title_n, f_number, fn)))
+        c1 = (top_n * 2) // 3
+        c2 = (top_n * 4) // 3
+        ss1 = df1[phe][:c1]
+        ss2 = df1[phe][c1:c2]
+        ss3 = df1[phe][c2:]
         tt1, pp1 = scipy_ttest_ind(ss1, ss2, False)
         tt2, pp2 = scipy_ttest_ind(ss2, ss3, False)
         tt3, pp3 = scipy_ttest_ind(ss1, ss3, False)
@@ -721,7 +717,7 @@ def t_test(dfx, ssy, f_string):
     return df1
 
 
-def plot_f50_nap(n_l, a_l, p_l, path_o):
+def plot_f50_nap(n_l, a_l, p_l, path_o, tp):
     df1 = pd.DataFrame()
     df1['mir_number'] = pd.Series(list(range(1, 50)))
     df1['negative'] = pd.Series(n_l)
@@ -730,21 +726,23 @@ def plot_f50_nap(n_l, a_l, p_l, path_o):
     lines = ['-.', ':', '--']
     colors = ['blue', 'red', 'green']
     col_l = ['negative', 'all', 'positive']
+    plt.rcParams["figure.figsize"] = [8, 6]
     for ct, ls, clr in zip(col_l, lines, colors):
         plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{} ROC AUC'.format(ct))
     plt.legend(loc='lower right')
     plt.title('Logistic regression of all, positive, and negative correlation miRNAs')
     plt.grid()
     plt.xticks(np.arange(0, max(df1['mir_number']) + 1, 5))
+    plt.yticks(np.arange(0.0, 1.05, 0.1))
     plt.xlabel('Feature numbers')
     plt.tight_layout()
-    plt.savefig(os.path.join(path_o, 'miRNA_comparison'))
+    plt.savefig(os.path.join(path_o, 'miRNA_comparison_{}'.format(tp)))
     plt.close()
 
 
 def main():
     check1 = True
-    test1 = True
+    test1 = False
     check2 = True
     check3 = True
     main_dir = './'
@@ -809,10 +807,11 @@ def main():
         df_mp = dfm2.loc[:, p2gp.get('Panicle Number (I)')]
         df_mm = dfm2.loc[:, p2gm.get('Panicle Number (I)')]
         df_ma = pd.concat([df_mp, df_mm], 1)
-        neg_45s = top_n_test(df_mm, ssp, 'Panicle_Number_I_negative', o_dir, 0.4, fn, 300, 10)
-        all_45s = top_n_test(df_ma, ssp, 'Panicle_Number_I_all', o_dir, 0.4, fn, 300, 10)
-        pos_45s = top_n_test(df_mp, ssp, 'Panicle_Number_I_positive', o_dir, 0.4, fn, 300, 10)
-        plot_f50_nap(neg_45s, all_45s, pos_45s, o_dir)
+        neg_45l, neg_50l = top_n_test(df_mm, ssp, 'Panicle_Number_I_negative', o_dir, 0.4, fn, 300, 10)
+        all_45l, all_50l = top_n_test(df_ma, ssp, 'Panicle_Number_I_all', o_dir, 0.4, fn, 300, 10)
+        pos_45l, pos_50l = top_n_test(df_mp, ssp, 'Panicle_Number_I_positive', o_dir, 0.4, fn, 300, 10)
+        plot_f50_nap(neg_45l, all_45l, pos_45l, o_dir, 45)
+        plot_f50_nap(neg_50l, all_50l, pos_50l, o_dir, 50)
 
 
 if __name__ == '__main__':
