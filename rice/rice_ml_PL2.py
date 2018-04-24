@@ -514,8 +514,10 @@ def feature_score4(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
         plt.tight_layout()
         plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(title_n, f_number, fn)))
         plt.close()
-        c1 = (top_n * 2) // 3
-        c2 = (top_n * 4) // 3
+        #c1 = (top_n * 2) // 3
+        #c2 = (top_n * 4) // 3
+        c1 = 26
+        c2 = 58
         ss1 = df1[phe][:c1]
         ss2 = df1[phe][c1:c2]
         ss3 = df1[phe][c2:]
@@ -742,7 +744,7 @@ def plot_f50_nap(n_l, a_l, p_l, path_o, tp):
 
 def main():
     check1 = True
-    test1 = False
+    test1 = True
     check2 = True
     check3 = True
     main_dir = './'
