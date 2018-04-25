@@ -37,9 +37,10 @@ def fs_rfe(df_in, ss_label, f_n, tp=0):
     if len(dfx.columns) > f_n:
         es1 = Ridge(alpha=0.1)
         es2 = Lasso(alpha=0.1)
-        #es3 = SVR(C=1.0, epsilon=0.2, kernel='linear', cache_size=3000)
+        # es3 = SVR(C=1.0, epsilon=0.2, kernel='linear', cache_size=3000)
         ch = {0: es1, 1: es2}
-        select = SFS(ch.get(tp, es1), k_features=f_n, forward=True, floating=False, verbose=1, scoring='neg_mean_squared_error', cv=4, n_jobs=3)
+        select = SFS(ch.get(tp, es1), k_features=f_n, forward=True, floating=False, verbose=1,
+                     scoring='neg_mean_squared_error', cv=4, n_jobs=3)
         select.fit(dfx.values, ss_label.values)
         mask = select.k_feature_idx_
         print(mask)
