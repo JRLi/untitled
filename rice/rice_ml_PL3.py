@@ -13,6 +13,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import RFE
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
@@ -22,6 +23,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
 from sklearn.metrics import confusion_matrix
+rs_stat = 25
 
 
 def prepare_output_dir(output_dir):
@@ -93,8 +95,8 @@ def s_top_gt(series_input, top_n, gt=False):
         ss.sort_values(inplace=True)
         ss = ss.iloc[range(-top_n, top_n)]
     if gt:
-        #ss = ss.gt(ss.mean()).astype(np.short)
-        ss = ss.gt(11).astype(np.short)
+        ss = ss.gt(ss.mean()).astype(np.short)
+        # ss = ss.gt(11).astype(np.short)
     return ss
 
 
@@ -140,16 +142,30 @@ def p_dict_get(path_in, p_t):
         return m2p_dict
 
 
-def select_r(df_in, ss_label, f_n, eps):
+def select_r2(df_in, ss_label, f_n, eps):
     dfx = df_in.copy()
     if len(dfx.columns) > f_n:
         select = SFS(RandomForestClassifier(n_estimators=eps, random_state=1), k_features=f_n, forward=True,
-                     floating=False, verbose=1,scoring='accuracy', cv=4, n_jobs=3)
+                     floating=False,scoring='accuracy', cv=4, n_jobs=3)
         select.fit(dfx.values, ss_label.values)
         mask = select.k_feature_idx_
         x_sfs = select.transform(dfx.values)
         m_mir_list = dfx.columns[[x for x in mask]]
         return x_sfs, ','.join(m_mir_list), len(m_mir_list)
+    else:
+        f_list = dfx.columns.tolist()
+        return dfx.values, ','.join(f_list), len(f_list)
+
+
+def select_r(df_in, ss_label, f_n, eps):
+    dfx = df_in.copy()
+    if len(dfx.columns) > f_n:
+        select = RFE(RandomForestClassifier(n_estimators=eps, random_state=1), n_features_to_select=f_n)
+        select.fit(dfx, ss_label)
+        mask = select.get_support()
+        x_rfe = select.transform(dfx)
+        m_mir_list = dfx.columns[mask]
+        return x_rfe, ','.join(m_mir_list), len(m_mir_list)
     else:
         f_list = dfx.columns.tolist()
         return dfx.values, ','.join(f_list), len(f_list)
@@ -195,11 +211,11 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
             print(fn, end=',')
             fn_list.append(fn)
             x, feature_string, f_l = select_r(dfx, ss1, fn, eps)
-            x_train, x_test, y_train, y_test = train_test_split(x, ss1, test_size=ts, random_state=0)
+            x_train, x_test, y_train, y_test = train_test_split(x, ss1, test_size=ts, random_state=rs_stat)
             clf1 = LogisticRegression(penalty='l2', C=0.001, random_state=0)
             clf3 = SVC(kernel='linear', probability=True, random_state=0)
             pipe1 = Pipeline([['sc', StandardScaler()], ['clf', clf1]])
-            pipe3 = Pipeline([['sc', StandardScaler()], ['clf', clf3]])
+            pipe3 = Pipeline([['ms', MinMaxScaler()], ['clf', clf3]])
             all_clf = [pipe1, pipe3]
             clf_labels = ['Logistic Regression', 'SVM linear']
             cv = x_train.shape[0] if df_cv > x_train.shape[0] else df_cv
@@ -284,7 +300,7 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
         fn_list.append(fn)
         x, feature_string, f_l = select_r(df_x, ss_y, fn, eps)
         tmp1_list.append('{},{},{}'.format(fn, f_l, feature_string))
-        x_train, x_test, y_train, y_test = train_test_split(x, ss_y, test_size=ts, random_state=0)
+        x_train, x_test, y_train, y_test = train_test_split(x, ss_y, test_size=ts, random_state=rs_stat)
         clf1 = LogisticRegression(penalty='l2', C=0.001, random_state=0)
         clf3 = SVC(kernel='linear', probability=True, random_state=0)
         pipe1 = Pipeline([['sc', StandardScaler()], ['clf', clf1]])
@@ -316,7 +332,7 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 ml_cv_list.append(cv_roc.mean())
                 ml_tr_list.append(roc_auc_tr)
                 ml_ts_list.append(roc_auc)
-            if fn >= 15:
+            if fn >= 10:
                 nx = x.copy()
                 ny = ss_y.values
                 cvf = StratifiedKFold(n_splits=cv)
@@ -370,23 +386,23 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     return tmp1_list, '\n'.join(tmp2_list)
 
 
-def plot_tt(dfm_in, ssp_in, ssp, path_o, phe, suf, rs=0):
+def plot_tt(dfm_in, ssp_in, ssp, path_o, phe, suf):
     o_dir = os.path.join(path_o, 'split_plot')
     prepare_output_dir(o_dir)
     dfm2 = dfm_in.copy()
     ssp2 = ssp_in.copy()
-    x_train, x_test, y_train, y_test = train_test_split(dfm2, ssp2, test_size=0.4, random_state=rs)
+    x_train, x_test, y_train, y_test = train_test_split(dfm2, ssp2, test_size=0.4, random_state=rs_stat)
     ss_train = ssp[y_train.index]
     ss_test = ssp[y_test.index]
     ss_train.sort_values(inplace=True)
     ss_test.sort_values(inplace=True)
     ap = ss_train.plot(color='g', linestyle=':', label='train')
     ss_test.plot(color='b', linestyle='-.', label='test')
-    # ap.axhline(y=ssp.mean(), color='r', linestyle='--', label='mean')
-    ap.axhline(y=11, color='r', linestyle='--', label='split line')
+    ap.axhline(y=ssp.mean(), color='r', linestyle='--', label='mean')
+    # ap.axhline(y=11, color='r', linestyle='--', label='split line')
     plt.legend(loc='lower right')
     plt.tight_layout()
-    plt.savefig(os.path.join(o_dir, '{}_{}_rs{}_1'.format(phe, suf, rs)))
+    plt.savefig(os.path.join(o_dir, '{}_{}_rs{}_1'.format(phe, suf, rs_stat)))
     plt.close()
 
     s_raw = pd.concat([ss_train, ss_test])
@@ -403,13 +419,13 @@ def plot_tt(dfm_in, ssp_in, ssp, path_o, phe, suf, rs=0):
     df_test = df1[df1['bin'] == 1]
     ax = df_train.plot(kind='scatter', x='index', y='raw', color='b', label='train', title='Training/test distribution')
     df_test.plot(kind='scatter', x='index', y='raw', color='r', label='test', ax=ax)
-    # ax.axhline(y=ssp.mean(), color='r', linestyle='--', label='mean')
-    ax.axhline(y=11, color='r', linestyle='--', label='split line')
+    ax.axhline(y=ssp.mean(), color='r', linestyle='--', label='mean')
+    # ax.axhline(y=11, color='r', linestyle='--', label='split line')
     plt.grid()
     plt.xlabel('rice sample index')
     plt.ylabel(phe)
     plt.tight_layout()
-    plt.savefig(os.path.join(o_dir, '{}_{}_rs{}_2'.format(phe, suf, rs)))
+    plt.savefig(os.path.join(o_dir, '{}_{}_rs{}_2'.format(phe, suf, rs_stat)))
     plt.close()
 
 
@@ -436,7 +452,7 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th,
     c_px = '{}_{}_c{}t{}'.format(f_prefix, na_suffix, top_cn, top_n)
     p_dir = os.path.join(r_dir, phe_m)
     prepare_output_dir(p_dir)
-    plot_tt(df_mp, ss1, ssp, p_dir, phe_m, c_px, 1)
+    plot_tt(df_mp, ss1, ssp, p_dir, phe_m, c_px)
 
     #mir_p, roc_p = mvc(df_mp, ss1, '{}_{}_positive'.format(c_px, phenotype), p_dir, 0.4, fn, 300, 10)
     mir_m, roc_m = mvc(df_mm, ss1, '{}_{}_negative'.format(c_px, phenotype), p_dir, 0.4, fn, 300, 10)
@@ -561,8 +577,8 @@ def feature_score3(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
         plt.tight_layout()
         plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(title_n, f_number, fn)))
         plt.close()
-        if fn == 'non':
-            df1.to_csv(os.path.join(pre_path2, '{}_{}_{}z.csv'.format(title_n, f_number, fn)))
+        # if fn == 'non':
+        #     df1.to_csv(os.path.join(pre_path2, '{}_{}_{}z.csv'.format(title_n, f_number, fn)))
         ss1 = df1[phe][:top_n]
         ss2 = df1[phe][-top_n:]
         tt, pp = scipy_ttest_ind(ss1, ss2, False)
@@ -665,7 +681,7 @@ def main():
     check1 = True
     test1 = True
     check2 = True
-    check3 = False
+    check3 = True
     main_dir = './'
     dfr, n_p = df_open(os.path.join(main_dir, 'wm_all_q.csv'))
     dfr = dfr.drop(['type (H)', 'waxy (H)'], axis=1)
