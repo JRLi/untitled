@@ -68,7 +68,7 @@ def mvc2(dfx_in, ssy_in, base_n, mms_c):
     dfx = dfx_in.copy()
     ssy = ssy_in.copy()
     dfx1, dfx2, ssy1, ssy2 = train_test_split(dfx, ssy, test_size=0.5, random_state=0)
-    fn_dict = {0: 'RandomForest', 1: 'LASSO', 2: 'Ridge', 3: 'SVC'}
+    fn_dict = {0: 'Random Forests', 1: 'Lasso Regression', 2: 'Ridge Regression', 3: 'Linear SVC'}
     r_list = []
     f_d = defaultdict(lambda: defaultdict(dict))
     mms = MinMaxScaler()
@@ -91,7 +91,7 @@ def mvc2(dfx_in, ssy_in, base_n, mms_c):
             pipe2 = Pipeline([['mc', MinMaxScaler()], ['clf', clf2]])
             pipe3 = Pipeline([['sc', StandardScaler()], ['clf', clf3]])
             all_clf = [pipe1, pipe2, pipe3]
-            clf_labels = ['Logistic_Regression', 'SVM_rbf', 'SVM_linear']
+            clf_labels = ['Logistic_Regression', 'SVM_rbf', 'Linear SVC']
             for clf, label in zip(all_clf, clf_labels):
                 clf.fit(x1, ssy1)
                 y_pre = clf.predict_proba(x2)[:, 1]
@@ -107,13 +107,22 @@ def mvc2(dfx_in, ssy_in, base_n, mms_c):
         plt.rcParams["figure.figsize"] = [16, 12]
         for ct, clr, ls in zip(r_list, colors, lines):
             plt.plot(dfg.index, dfg[ct], color=clr, linestyle=ls, marker='.', label=ct)
-        plt.legend(loc='lower right')
-        plt.yticks(np.arange(0, 1.05, 0.05))
+        plt.legend(loc='lower right', prop={'size': 24})
+        # plt.yticks(np.arange(0, 1.05, 0.05))
         plt.title('Feature selection performance: {}'.format(label))
         plt.grid()
         plt.xlabel('Feature numbers')
         plt.ylabel('ROC AUC')
         plt.tight_layout()
+        BIGGER_SIZE = 16
+
+        plt.rc('font', size=BIGGER_SIZE)  # controls default text sizes
+        plt.rc('axes', titlesize=BIGGER_SIZE)  # fontsize of the axes title
+        plt.rc('axes', labelsize=BIGGER_SIZE)  # fontsize of the x and y labels
+        plt.rc('xtick', labelsize=BIGGER_SIZE)  # fontsize of the tick labels
+        plt.rc('ytick', labelsize=BIGGER_SIZE)  # fontsize of the tick labels
+        plt.rc('legend', fontsize=BIGGER_SIZE)  # legend fontsize
+        plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
         plt.savefig('{}_{}'.format(base_n, label))
         plt.close()
 
