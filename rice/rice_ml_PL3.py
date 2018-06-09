@@ -24,6 +24,7 @@ from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
 from sklearn.metrics import confusion_matrix
 rs_stat = 25
+fn_threshold = 10   # or 10
 
 
 def prepare_output_dir(output_dir):
@@ -178,10 +179,34 @@ def fn_check_plot(df_in, path_o, title_n):
     prepare_output_dir(ml_path)
     df1 = df_in.copy()
     for t, o_dir in zip(['Logistic Regression', 'SVM Linear'], [l_path, ml_path]):
-        lines = [':', '-.', '--']
-        colors = ['red', 'blue', 'green']
-        col_l = ['lr_cv10_roc', 'lr_train_roc', 'lr_test_roc'] if t == 'Logistic Regression' \
-            else ['svl_cv10_roc', 'svl_train_roc', 'svl_test_roc']
+        lines = ['-.', '--']
+        colors = ['blue', 'green']
+        col_l = ['lr_train_roc', 'lr_test_roc'] if t == 'Logistic Regression' \
+            else ['svl_train_roc', 'svl_test_roc']
+        for ct, ls, clr in zip(col_l, lines, colors):
+            plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{}_{}'.format(t, ct.split('_', 1)[1]))
+        plt.legend(loc='lower right')
+        plt.title(title_n)
+        plt.grid()
+        plt.xticks(np.arange(0, max(df1['mir_number']) + 1, 5))
+        plt.xlabel('Feature numbers')
+        f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
+        plt.tight_layout()
+        plt.savefig(os.path.join(o_dir, '{}_{}'.format(f_name, t.replace(' ', '_'))))
+        plt.close()
+
+
+def acc_plot(df_in, path_o, title_n):
+    l_path = os.path.join(path_o, 'acc_lg')
+    ml_path = os.path.join(path_o, 'acc_svmL')
+    prepare_output_dir(l_path)
+    prepare_output_dir(ml_path)
+    df1 = df_in.copy()
+    for t, o_dir in zip(['Logistic Regression', 'SVM Linear'], [l_path, ml_path]):
+        lines = ['-.', '--']
+        colors = ['blue', 'green']
+        col_l = ['lr_train_acc', 'lr_test_acc'] if t == 'Logistic Regression' \
+            else ['svl_train_acc', 'svl_test_acc']
         for ct, ls, clr in zip(col_l, lines, colors):
             plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{}_{}'.format(t, ct.split('_', 1)[1]))
         plt.legend(loc='lower right')
@@ -196,8 +221,9 @@ def fn_check_plot(df_in, path_o, title_n):
 
 
 def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
-    plt.rcParams["figure.figsize"] = [22, 16]
-    fig, ax = plt.subplots(3, 3)
+    plt.rcParams["figure.figsize"] = [22, 12]
+    # fig, ax = plt.subplots(3, 3)
+    fig, ax = plt.subplots(2, 3)
     i, j = 0, 0
     list_45l, list_50l = [], []
     for tn in range(30, 56, 5):
@@ -237,9 +263,11 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                     ml_tr_list.append(roc_auc_tr)
                     ml_ts_list.append(roc_auc)
         if tn == 45:
-            list_45l += l_ts_list
+            # list_45l += l_ts_list
+            list_45l += ml_ts_list
         if tn == 50:
-            list_50l += l_ts_list
+            # list_50l += l_ts_list
+            list_50l += ml_ts_list
         print()
         df_s = pd.DataFrame()
         df_s['mir_number'] = pd.Series(fn_list)
@@ -249,20 +277,22 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
         df_s['svl_cv10_roc'] = pd.Series(ml_cv_list)
         df_s['svl_train_roc'] = pd.Series(ml_tr_list)
         df_s['svl_test_roc'] = pd.Series(ml_ts_list)
-        lines = [':', '-.', '--']
-        colors = ['red', 'blue', 'green']
-        col_l = ['lr_cv10_roc', 'lr_train_roc', 'lr_test_roc']
-
+        # lines = [':', '-.', '--']
+        # colors = ['red', 'blue', 'green']
+        # col_l = ['lr_cv10_roc', 'lr_train_roc', 'lr_test_roc']
+        lines = ['-.', '--']
+        colors = ['blue', 'green']
+        col_l = ['svl_train_roc', 'svl_test_roc']
         for ct, ls, clr in zip(col_l, lines, colors):
-            ax[j, i].plot(df_s['mir_number'], df_s[ct], color=clr, linestyle=ls, label='Logistic Regression {}'.
+            ax[j, i].plot(df_s['mir_number'], df_s[ct], color=clr, linestyle=ls, label='Linear SVM {}'.
                           format(ct.split('_', 1)[1]))
         ax[j, i].legend(loc='lower right')
-        ax[j, i].set_title('Logistic Regression: Top[{}]'.format(tn))
+        ax[j, i].set_title('Linear SVM: Top[{}]'.format(tn))
         ax[j, i].grid()
         ax[j, i].set_xlabel('Feature numbers')
         ax[j, i].set_ylabel('ROC AUC')
         ax[j, i].set_yticks(np.arange(0.0, 1.05, 0.1))
-
+        '''
         if tn in [45, 50, 55]:
             col_s = ['svl_cv10_roc', 'svl_train_roc', 'svl_test_roc']
             for ct, ls, clr in zip(col_s, lines, colors):
@@ -274,6 +304,7 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 ax[2, i].set_xlabel('Feature numbers')
                 ax[2, i].set_ylabel('ROC AUC')
                 ax[2, i].set_yticks(np.arange(0.0, 1.05, 0.1))
+        '''
         i += 1
         if i == 3:
             j += 1
@@ -291,8 +322,9 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     pre_path2 = os.path.join(r_path, pre_path)
     prepare_output_dir(pre_path2)
     df_x = df_xi.copy()
-    fn_list, l_tr_list, l_cv_list, l_ts_list, m_tr_list, m_cv_list, m_ts_list = [], [], [], [], [], [], []
+    fn_list, l_tr_list, l_cv_list, l_ts_list = [], [], [], []
     ml_tr_list, ml_cv_list, ml_ts_list = [], [], []
+    l_tr_acc, l_ts_acc, ml_tr_acc, ml_ts_acc = [], [], [], []
     tmp1_list, tmp2_list = [], []
     print('Now running F_number:')
     for fn in range(1, f_number + 1):
@@ -328,11 +360,15 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 l_cv_list.append(cv_roc.mean())
                 l_tr_list.append(roc_auc_tr)
                 l_ts_list.append(roc_auc)
+                l_tr_acc.append(acc_tr)
+                l_ts_acc.append(acc_ts)
             else:
                 ml_cv_list.append(cv_roc.mean())
                 ml_tr_list.append(roc_auc_tr)
                 ml_ts_list.append(roc_auc)
-            if fn >= 10:
+                ml_tr_acc.append(acc_tr)
+                ml_ts_acc.append(acc_ts)
+            if fn >= fn_threshold:
                 nx = x.copy()
                 ny = ss_y.values
                 cvf = StratifiedKFold(n_splits=cv)
@@ -351,16 +387,16 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 mean_tpr[-1] = 1.0
                 mean_auc = metrics.auc(mean_fpr, mean_tpr)
                 std_auc = np.std(aucs)
-                plt.plot(mean_fpr, mean_tpr, color='b', label=r'CV Mean ROC (AUC = %0.2f $\pm$ %0.2f)' %
-                                                              (mean_auc, std_auc), lw=2, alpha=.8)
-                std_tpr = np.std(tprs, axis=0)
+                #plt.plot(mean_fpr, mean_tpr, color='b', label=r'CV Mean ROC (AUC = %0.2f $\pm$ %0.2f)' %
+                #                                              (mean_auc, std_auc), lw=2, alpha=.8)
+                # std_tpr = np.std(tprs, axis=0)
                 # tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
                 # tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
                 # plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2, label=r'$\pm$ 1 std. dev.')
-                plt.plot(fpr, tpr, color='r', linestyle=':', label='{} Test (AUC = {:.2f})'.format(label, roc_auc),
-                         lw=2, alpha=.8)
-                plt.plot(fpr_tr, tpr_tr, color='g', linestyle='-.', label='{} Train (auc = {:.2f})'
+                plt.plot(fpr_tr, tpr_tr, color='b', linestyle='-.', label='{} Train (auc = {:.2f})'
                          .format(label, roc_auc_tr), lw=2, alpha=.8)
+                plt.plot(fpr, tpr, color='g', linestyle='--', label='{} Test (AUC = {:.2f})'.format(label, roc_auc),
+                         lw=2, alpha=.8)
                 plt.legend(loc='lower right')
                 plt.plot([0, 1], [0, 1], linestyle='--', color='gray', linewidth=2)
                 plt.xlim([-0.1, 1.1])
@@ -382,7 +418,12 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     df_s['svl_cv10_roc'] = pd.Series(ml_cv_list)
     df_s['svl_train_roc'] = pd.Series(ml_tr_list)
     df_s['svl_test_roc'] = pd.Series(ml_ts_list)
+    df_s['lr_train_acc'] = pd.Series(l_tr_acc)
+    df_s['lr_test_acc'] = pd.Series(l_ts_acc)
+    df_s['svl_train_acc'] = pd.Series(ml_tr_acc)
+    df_s['svl_test_acc'] = pd.Series(ml_ts_acc)
     fn_check_plot(df_s, out_path, title_n)
+    acc_plot(df_s, out_path, title_n)
     return tmp1_list, '\n'.join(tmp2_list)
 
 
@@ -468,7 +509,7 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th,
 
 
 def feature_score4(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, top_n):
-    o_path = os.path.join(path_o, 'feature_score')
+    o_path = os.path.join(path_o, 'feature_score2')
     prepare_output_dir(o_path)
     pre_path = 'pos' if title_n.endswith('pos') else 'neg' if title_n.endswith('neg') else 'all'
     pre_path2 = os.path.join(o_path, pre_path)
@@ -545,9 +586,9 @@ def feature_score3(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
     fn_list = ['def', 'rev', 'non']
     pv_list = []
     for fn in fn_list:
-        ssc = ssc if fn == 'def' else ssc*(-1) if fn == 'rev' else 1
+        ssca = ssc if fn == 'def' else ssc*(-1) if fn == 'rev' else 1
 
-        dfc = dfs * ssc
+        dfc = dfs * ssca
         df1 = pd.DataFrame()
         df1['scores'] = dfc.sum(1)
         df1[phe] = ssy_n
@@ -577,8 +618,8 @@ def feature_score3(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
         plt.tight_layout()
         plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(title_n, f_number, fn)))
         plt.close()
-        # if fn == 'non':
-        #     df1.to_csv(os.path.join(pre_path2, '{}_{}_{}z.csv'.format(title_n, f_number, fn)))
+        if fn == 'non':
+            df1.to_csv(os.path.join(pre_path2, '{}_{}_{}z.csv'.format(title_n, f_number, fn)))
         ss1 = df1[phe][:top_n]
         ss2 = df1[phe][-top_n:]
         tt, pp = scipy_ttest_ind(ss1, ss2, False)
@@ -667,7 +708,7 @@ def plot_f50_nap(n_l, a_l, p_l, path_o, tp):
     for ct, ls, clr in zip(col_l, lines, colors):
         plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{} ROC AUC'.format(ct))
     plt.legend(loc='lower right')
-    plt.title('Logistic regression of all, positive, and negative correlation miRNAs')
+    plt.title('Linear SVM of all, positive, and negative correlation miRNAs')
     plt.grid()
     plt.xticks(np.arange(0, max(df1['mir_number']) + 1, 5))
     plt.yticks(np.arange(0.0, 1.05, 0.1))
@@ -726,10 +767,12 @@ def main():
                     with open(os.path.join(p_dir, '{}_{}_{}_mir.csv'.format(c_px, phe_m, c))) as in_f:
                         for line in in_f:
                             lf = line.rstrip().split(',', maxsplit=2)
-                            if 10 <= int(lf[1]) <= 30:
+                            if 10 <= int(lf[1]) <= 25:
                                 out_feature_plot(dfx, ss1, ssp, lf[2], m2c.get(phenotype), m2p.get(phenotype), p_dir,
                                                  '{}_{}_{}'.format(c_px, phe_m, c), int(lf[1]))
                                 feature_score3(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'.
+                                               format(c_px, phe_m, c), int(lf[1]), phe_m, tn)
+                                feature_score4(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'.
                                                format(c_px, phe_m, c), int(lf[1]), phe_m, tn)
     if check3:
         print('Step 3')
