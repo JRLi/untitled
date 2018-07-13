@@ -25,7 +25,7 @@ def open_df(path_in):
 
 
 def select_r(df_in, ss_label, f_n, tp=0):
-    if len(df_in.columns) > f_n != 0 and tp < 4:
+    if len(df_in.columns) > f_n > 0 and tp < 4:
         rfc = RandomForestClassifier(n_estimators=100, random_state=1)
         lg1 = LogisticRegression(penalty='l1', C=3, random_state=0)
         lg2 = LogisticRegression(penalty='l2', random_state=1)
