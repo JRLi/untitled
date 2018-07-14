@@ -13,8 +13,8 @@ from sklearn.model_selection import cross_val_score
 from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import MinMaxScaler
 r_d = 'D:\\Project\\circ_miRNA\\platform'
-f_b = 'GSE98181_breast_cancer2.csv'
-f_c = 'GSE98181_control2.csv'
+f_b = 'GSE113956_oral_squamous_cell_cancer.csv'
+f_c = 'GSE113956_control.csv'
 
 
 def open_df(path_in):
