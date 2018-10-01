@@ -34,7 +34,7 @@ def prepare_output_dir(output_dir):
         os.mkdir(output_dir)
 
 
-def openDF(in_path, direct = 'f'):
+def open_df(in_path, direct='f'):
     fpath, fname = os.path.split(in_path)
     fbase, fext = os.path.splitext(fname)
     df = pd.read_csv(in_path, index_col=0) if fext == '.csv' else pd.read_table(in_path, index_col=0)
@@ -43,16 +43,16 @@ def openDF(in_path, direct = 'f'):
     return df, fbase
 
 
-def quantileNormalize(df_input, type):
+def quantile_normalize(df_input, q_type):
     df = df_input.copy()
-    #compute rank
+    # compute rank
     dic = {}
     for col in df:
-        dic.update({col : sorted(df[col])})
+        dic.update({col: sorted(df[col])})
     sorted_df = pd.DataFrame(dic)
-    print('To quantile normalization.\nqType:', 'mean' if type == 'a' else 'median')
-    rank = sorted_df.mean(axis = 1).tolist() if type == 'a' else sorted_df.median(axis=1).tolist()
-    #sort
+    print('To quantile normalization.\nqType:', 'mean' if q_type == 'a' else 'median')
+    rank = sorted_df.mean(axis=1).tolist() if q_type == 'a' else sorted_df.median(axis=1).tolist()
+    # sort
     for col in df:
         t = np.searchsorted(np.sort(df[col]), df[col])
         df[col] = [rank[i] for i in t]
@@ -78,12 +78,12 @@ def calculate_diff(cur_exp, cur_reg, row_num):
     return diff
 
 
-def calculate_ES(data, reg):
+def calculate_es(data, reg):
     es = pd.DataFrame(0, data.columns, reg.columns)
     print('To calculate ES')
     for k in range(len(data.columns)):
         cur_exp = data.iloc[:, k].sort_values(ascending=False)
-        cur_reg = reg.ix[cur_exp.index]
+        cur_reg = reg.loc[cur_exp.index]
         xx = calculate_diff(cur_exp, cur_reg, len(data.index))
         pos_es = xx.max()
         neg_es = xx.min()
@@ -113,7 +113,7 @@ def permutation(data, reg, perm):
     return pos_es, neg_es
 
 
-def normalize_ES(es, pos_es, neg_es):
+def normalize_es(es, pos_es, neg_es):
     print('To normalize')
     pavg = pos_es.mean(axis=1)
     navg = neg_es.mean(axis=1).abs()
@@ -127,7 +127,7 @@ def normalize_ES(es, pos_es, neg_es):
     return es
 
 
-def final_ES(df_input):
+def final_es(df_input):
     df_up = df_input.iloc[:, 0:len(df_input.columns) // 2]
     df_dn = df_input.iloc[:, len(df_input.columns) // 2:len(df_input.columns)]
     df_all = df_up - df_dn.values
@@ -142,36 +142,39 @@ def main(argv=None):
         print('\nStart time:', str(time_1))
         prepare_output_dir('es_out')
 
-        data, data_base = openDF(argv.pairs[0], argv.direct[0])
-        reg, reg_base = openDF(argv.pairs[1], argv.direct[1])
-        data = quantileNormalize(data, argv.qType)
+        data, data_base = open_df(argv.pairs[0], argv.direct[0])
+        reg, reg_base = open_df(argv.pairs[1], argv.direct[1])
+        data = quantile_normalize(data, argv.qType)
         time_2 = datetime.datetime.now()
         print('Finish quantile normalization:', str(time_2 - time_1))
 
         qn_suffix = '_qnMedian' if argv.qType == 'm' else '_qnMean'
         ixs = reg.index.intersection(data.index)    # index order is followed later df
-        #ixs = [ix for ix in data.index if ix in reg.index]
+        # ixs = [ix for ix in data.index if ix in reg.index]
         print('The numbers of intersection features between data and reg:', len(ixs))
-        data = data.ix[ixs]
-        reg = reg.ix[ixs]
+        data = data.loc[ixs]
+        reg = reg.loc[ixs]
         data = data if argv.no_median else median_normalizing(data)
         nm_suffix = '_noNM' if argv.no_median else '_NM'
-        es = calculate_ES(data, reg)
+        es = calculate_es(data, reg)
         time_3 = datetime.datetime.now()
         print('Finish ES calculation, prepare to permutation:', str(time_3 - time_2))
 
         pos_es, neg_es = permutation(data, reg, argv.perm)
-        es = normalize_ES(es, pos_es, neg_es)
+        es = normalize_es(es, pos_es, neg_es)
         es = es.add_suffix('.ES')
         print('es shape:', es.shape)
         time_4 = datetime.datetime.now()
         print('After permutation:', str(time_4 - time_3))
-        #es.to_csv('./{}_{}{}{}_perm{}_ES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm), na_rep='NA')
-        fes = final_ES(es)
-        fes.to_csv('es_out/{}_{}{}{}_p{}_fES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm), na_rep='NA')
+        # es.to_csv('./{}_{}{}{}_perm{}_ES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm),
+        # na_rep='NA')
+        fes = final_es(es)
+        fes.to_csv('es_out/{}_{}{}{}_p{}_fES.csv'.format(data_base, reg_base, qn_suffix, nm_suffix, argv.perm),
+                   na_rep='NA')
         time_5 = datetime.datetime.now()
         print('Finished time:', str(time_5))
         print('All used time:', str(time_5 - time_1))
+
 
 if __name__ == "__main__":
     sys.exit(main())
