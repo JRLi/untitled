@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import scipy.stats as st
 import os
+import sys
 import math
 import matplotlib.pyplot as plt
 from numpy import interp
@@ -24,7 +25,7 @@ from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
 from sklearn.metrics import confusion_matrix
 rs_stat = 25
-fn_threshold = 10   # or 10
+fn_threshold = 10   # 50 or 10
 
 
 def prepare_output_dir(output_dir):
@@ -179,17 +180,30 @@ def fn_check_plot(df_in, path_o, title_n):
     prepare_output_dir(ml_path)
     df1 = df_in.copy()
     for t, o_dir in zip(['Logistic Regression', 'SVM Linear'], [l_path, ml_path]):
+        plt.rcParams["figure.figsize"] = [12, 9]
+        BIGGER_SIZE = 16
+        plt.rc('font', size=BIGGER_SIZE)  # controls default text sizes
+        plt.rc('axes', titlesize=BIGGER_SIZE)  # fontsize of the axes title
+        plt.rc('axes', labelsize=BIGGER_SIZE)  # fontsize of the x and y labels
+        plt.rc('xtick', labelsize=BIGGER_SIZE)  # fontsize of the tick labels
+        plt.rc('ytick', labelsize=BIGGER_SIZE)  # fontsize of the tick labels
+        plt.rc('legend', fontsize=BIGGER_SIZE)  # legend fontsize
+        plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+        f, ax = plt.subplots()
         lines = ['-.', '--']
         colors = ['blue', 'green']
         col_l = ['lr_train_roc', 'lr_test_roc'] if t == 'Logistic Regression' \
             else ['svl_train_roc', 'svl_test_roc']
-        for ct, ls, clr in zip(col_l, lines, colors):
-            plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{}_{}'.format(t, ct.split('_', 1)[1]))
+        labels = ['Training ROC AUC', 'Testing ROC AUC']
+        for ct, ls, clr, lb in zip(col_l, lines, colors, labels):
+            plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{}'.format(lb))
         plt.legend(loc='lower right')
-        plt.title(title_n)
-        plt.grid()
+        # plt.title(title_n)
+        # plt.grid()
+        plt.setp(ax.spines.values(), linewidth=2)
         plt.xticks(np.arange(0, max(df1['mir_number']) + 1, 5))
         plt.xlabel('Feature numbers')
+        plt.ylabel('ROC AUC')
         f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
         plt.tight_layout()
         plt.savefig(os.path.join(o_dir, '{}_{}'.format(f_name, t.replace(' ', '_'))))
@@ -203,17 +217,30 @@ def acc_plot(df_in, path_o, title_n):
     prepare_output_dir(ml_path)
     df1 = df_in.copy()
     for t, o_dir in zip(['Logistic Regression', 'SVM Linear'], [l_path, ml_path]):
+        plt.rcParams["figure.figsize"] = [12, 9]
+        BIGGER_SIZE = 16
+        plt.rc('font', size=BIGGER_SIZE)  # controls default text sizes
+        plt.rc('axes', titlesize=BIGGER_SIZE)  # fontsize of the axes title
+        plt.rc('axes', labelsize=BIGGER_SIZE)  # fontsize of the x and y labels
+        plt.rc('xtick', labelsize=BIGGER_SIZE)  # fontsize of the tick labels
+        plt.rc('ytick', labelsize=BIGGER_SIZE)  # fontsize of the tick labels
+        plt.rc('legend', fontsize=BIGGER_SIZE)  # legend fontsize
+        plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+        f, ax = plt.subplots()
         lines = ['-.', '--']
         colors = ['blue', 'green']
         col_l = ['lr_train_acc', 'lr_test_acc'] if t == 'Logistic Regression' \
             else ['svl_train_acc', 'svl_test_acc']
-        for ct, ls, clr in zip(col_l, lines, colors):
-            plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{}_{}'.format(t, ct.split('_', 1)[1]))
+        labels = ['Training Accuracy', 'Testing Accuracy']
+        for ct, ls, clr, lb in zip(col_l, lines, colors, labels):
+            plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{}'.format(lb))
         plt.legend(loc='lower right')
-        plt.title(title_n)
-        plt.grid()
+        # plt.title(title_n)
+        # plt.grid()
+        plt.setp(ax.spines.values(), linewidth=2)
         plt.xticks(np.arange(0, max(df1['mir_number']) + 1, 5))
         plt.xlabel('Feature numbers')
+        plt.ylabel('Accuracy')
         f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
         plt.tight_layout()
         plt.savefig(os.path.join(o_dir, '{}_{}'.format(f_name, t.replace(' ', '_'))))
@@ -238,7 +265,7 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
             fn_list.append(fn)
             x, feature_string, f_l = select_r(dfx, ss1, fn, eps)
             x_train, x_test, y_train, y_test = train_test_split(x, ss1, test_size=ts, random_state=rs_stat)
-            clf1 = LogisticRegression(penalty='l2', C=0.001, random_state=0)
+            clf1 = LogisticRegression(penalty='l2', C=0.001, solver='lbfgs', random_state=0)
             clf3 = SVC(kernel='linear', probability=True, random_state=0)
             pipe1 = Pipeline([['sc', StandardScaler()], ['clf', clf1]])
             pipe3 = Pipeline([['ms', MinMaxScaler()], ['clf', clf3]])
@@ -287,8 +314,9 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
             ax[j, i].plot(df_s['mir_number'], df_s[ct], color=clr, linestyle=ls, label='Linear SVM {}'.
                           format(ct.split('_', 1)[1]))
         ax[j, i].legend(loc='lower right')
-        ax[j, i].set_title('Linear SVM: Top[{}]'.format(tn))
-        ax[j, i].grid()
+        ax[j, i].set_title('Top[{}] of rice'.format(tn))
+        # ax[j, i].grid()
+        plt.setp(ax[j, i].spines.values(), linewidth=2)
         ax[j, i].set_xlabel('Feature numbers')
         ax[j, i].set_ylabel('ROC AUC')
         ax[j, i].set_yticks(np.arange(0.0, 1.05, 0.1))
@@ -333,7 +361,7 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
         x, feature_string, f_l = select_r(df_x, ss_y, fn, eps)
         tmp1_list.append('{},{},{}'.format(fn, f_l, feature_string))
         x_train, x_test, y_train, y_test = train_test_split(x, ss_y, test_size=ts, random_state=rs_stat)
-        clf1 = LogisticRegression(penalty='l2', C=0.001, random_state=0)
+        clf1 = LogisticRegression(penalty='l2', C=0.001, solver='lbfgs', random_state=0)
         clf3 = SVC(kernel='linear', probability=True, random_state=0)
         pipe1 = Pipeline([['sc', StandardScaler()], ['clf', clf1]])
         pipe3 = Pipeline([['mc', MinMaxScaler()], ['clf', clf3]])
@@ -375,6 +403,14 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 tprs, aucs = [], []
                 mean_fpr = np.linspace(0, 1, 100)
                 plt.rcParams["figure.figsize"] = [12, 9]
+                BIGGER_SIZE = 16
+                plt.rc('font', size=BIGGER_SIZE)  # controls default text sizes
+                plt.rc('axes', titlesize=BIGGER_SIZE)  # fontsize of the axes title
+                plt.rc('axes', labelsize=BIGGER_SIZE)  # fontsize of the x and y labels
+                plt.rc('xtick', labelsize=BIGGER_SIZE)  # fontsize of the tick labels
+                plt.rc('ytick', labelsize=BIGGER_SIZE)  # fontsize of the tick labels
+                plt.rc('legend', fontsize=BIGGER_SIZE)  # legend fontsize
+                plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
                 for train, test in cvf.split(nx, ny):
                     md = clf.fit(nx[train], ny[train])
                     pb = md.predict_proba(nx[test])
@@ -393,16 +429,18 @@ def mvc(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
                 # tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
                 # tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
                 # plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2, label=r'$\pm$ 1 std. dev.')
-                plt.plot(fpr_tr, tpr_tr, color='b', linestyle='-.', label='{} Train (auc = {:.2f})'
-                         .format(label, roc_auc_tr), lw=2, alpha=.8)
-                plt.plot(fpr, tpr, color='g', linestyle='--', label='{} Test (AUC = {:.2f})'.format(label, roc_auc),
+                f, ax = plt.subplots()
+                plt.plot(fpr_tr, tpr_tr, color='b', linestyle='-.', label='Training (AUC = {:.2f})'
+                         .format(roc_auc_tr), lw=2, alpha=.8)
+                plt.plot(fpr, tpr, color='g', linestyle='--', label='Testing (AUC = {:.2f})'.format(roc_auc),
                          lw=2, alpha=.8)
                 plt.legend(loc='lower right')
                 plt.plot([0, 1], [0, 1], linestyle='--', color='gray', linewidth=2)
-                plt.xlim([-0.1, 1.1])
-                plt.ylim([-0.1, 1.1])
-                plt.title('Receiver operating characteristic of [{}]'.format(label))
+                plt.xlim([-0.05, 1.05])
+                plt.ylim([-0.05, 1.05])
+                # plt.title('Receiver operating characteristic of [{}]'.format(label))
                 plt.grid()
+                plt.setp(ax.spines.values(), linewidth=2)
                 plt.xlabel('False Positive Rate (1 - Specificity)')
                 plt.ylabel('True Positive Rate (Sensitivity)')
                 f_name = title_n.replace(' ', '_').replace('(', '').replace(')', '')
@@ -442,6 +480,7 @@ def plot_tt(dfm_in, ssp_in, ssp, path_o, phe, suf):
     ap.axhline(y=ssp.mean(), color='r', linestyle='--', label='mean')
     # ap.axhline(y=11, color='r', linestyle='--', label='split line')
     plt.legend(loc='lower right')
+    plt.setp(ap.spines.values(), linewidth=2)
     plt.tight_layout()
     plt.savefig(os.path.join(o_dir, '{}_{}_rs{}_1'.format(phe, suf, rs_stat)))
     plt.close()
@@ -458,13 +497,16 @@ def plot_tt(dfm_in, ssp_in, ssp, path_o, phe, suf):
     df1.reset_index(inplace=True)
     df_train = df1[df1['bin'] == 0]
     df_test = df1[df1['bin'] == 1]
-    ax = df_train.plot(kind='scatter', x='index', y='raw', color='b', label='train', title='Training/test distribution')
-    df_test.plot(kind='scatter', x='index', y='raw', color='r', label='test', ax=ax)
-    ax.axhline(y=ssp.mean(), color='r', linestyle='--', label='mean')
+    # ax = df_train.plot(kind='scatter', x='index', y='raw', color='b', label='train', title='Train/Test distribution')
+    ax = df_train.plot(kind='scatter', x='index', y='raw', color='b', label='Training')
+    df_test.plot(kind='scatter', x='index', y='raw', color='r', label='Testing', ax=ax)
+    ax.axhline(y=ssp.mean(), color='r', linestyle='--', label='Mean value')
     # ax.axhline(y=11, color='r', linestyle='--', label='split line')
-    plt.grid()
-    plt.xlabel('rice sample index')
+    # plt.grid()
+    ax.legend()
+    plt.xlabel('Rice index')
     plt.ylabel(phe)
+    plt.setp(ax.spines.values(), linewidth=2)
     plt.tight_layout()
     plt.savefig(os.path.join(o_dir, '{}_{}_rs{}_2'.format(phe, suf, rs_stat)))
     plt.close()
@@ -497,8 +539,8 @@ def pn(df_mir, df_phe, r_p, phenotype, f_prefix, na_suffix, top_cn, top_n, c_th,
 
     #mir_p, roc_p = mvc(df_mp, ss1, '{}_{}_positive'.format(c_px, phenotype), p_dir, 0.4, fn, 300, 10)
     mir_m, roc_m = mvc(df_mm, ss1, '{}_{}_negative'.format(c_px, phenotype), p_dir, 0.4, fn, 300, 10)
-    mir_a, roc_a = mvc(df_ma, ss1, '{}_{}_all'.format(c_px, phenotype), p_dir, 0.4, fn, 300, 10)
-    for m, r, p in zip([mir_m, mir_a], [roc_m, roc_a], ['neg', 'all']):
+    # mir_a, roc_a = mvc(df_ma, ss1, '{}_{}_all'.format(c_px, phenotype), p_dir, 0.4, fn, 300, 10)
+    for m, r, p in zip([mir_m], [roc_m], ['neg']):
         with open(os.path.join(p_dir, '{}_{}_{}_mir.csv'.format(c_px, phe_m, p)), 'w') as o1, \
                 open(os.path.join(p_dir, '{}_{}_{}_roc.csv'.format(c_px, phe_m, p)), 'w') as o2:
             o2.write('Feature_number,table_process,Phenotype_mir_type,Classifier,10-fold cv,Training samples,ROC_AUC,'
@@ -536,24 +578,27 @@ def feature_score4(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
 
         plt.rcParams["figure.figsize"] = [12, 16]
         fig, ax = plt.subplots(2, 1)
-        df1.plot(kind='scatter', x='index', y='scores', color='b', label='mir_scores', title='{}_{}'
-                      .format(title_n, f_number), ax=ax[0])
+        df1.plot(kind='scatter', x='index', y='scores', color='b', label='Feature scores', ax=ax[0])
         ax[0].axvline(x=(top_n * 2) / 3 + 0.5, color='g', linestyle=':')
         ax[0].axvline(x=(top_n * 4) / 3 + 0.5, color='g', linestyle=':')
         ax[0].text((top_n * 2) / 3 + 0.5, 0.5 * (df1['scores'].min() + df1['scores'].max()), '1/3 score', rotation=90)
         ax[0].text((top_n * 4) / 3 + 0.5, 0.5 * (df1['scores'].min() + df1['scores'].max()), '2/3 score', rotation=90)
-        ax[0].set_ylabel('feature scores', color='b')
+        ax[0].set_ylabel('Feature scores', color='b')
+        ax[0].set_xlabel('Rice index', color='k')
         ax[0].tick_params('y')
         ax[0].grid()
-        df1.plot(kind='scatter', x='index', y=phe, color='r', label='phenotype', ax=ax[1])
+        plt.setp(ax[0].spines.values(), linewidth=2)
+        df1.plot(kind='scatter', x='index', y=phe, color='r', label='Panicle number', ax=ax[1])
         df1.plot.line(x='index', y='trend', ax=ax[1])
         ax[1].axvline(x=(top_n * 2) / 3 + 0.5, color='g', linestyle=':')
         ax[1].axvline(x=(top_n * 4) / 3 + 0.5, color='g', linestyle=':')
-        ax[1].text((top_n * 2) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), 'demarcation 1', rotation=90)
-        ax[1].text((top_n * 4) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), 'demarcation 2', rotation=90)
+        ax[1].text((top_n * 2) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), 'Demarcation 1', rotation=90)
+        ax[1].text((top_n * 4) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), 'Demarcation 2', rotation=90)
         ax[1].set_ylabel(phe, color='r')
+        ax[1].set_xlabel('Rice index', color='k')
         ax[1].tick_params('y')
         ax[1].grid()
+        plt.setp(ax[1].spines.values(), linewidth=2)
         plt.tight_layout()
         plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(title_n, f_number, fn)))
         plt.close()
@@ -601,20 +646,85 @@ def feature_score3(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
 
         plt.rcParams["figure.figsize"] = [12, 16]
         fig, ax = plt.subplots(2, 1)
-        df1.plot(kind='scatter', x='index', y='scores', color='b', label='mir_scores', title='{}_{}'
-                      .format(title_n, f_number), ax=ax[0])
+        df1.plot(kind='scatter', x='index', y='scores', color='b', label='Feature score', ax=ax[0])
         ax[0].axvline(x=(top_n * 2 + 1)/2, color='g', linestyle=':')
-        ax[0].text((top_n * 2 + 1)/2, 0.5 * (df1['scores'].min() + df1['scores'].max()), 'median score', rotation=90)
-        ax[0].set_ylabel('feature scores', color='b')
+        ax[0].text((top_n * 2 + 1)/2, 0.5 * (df1['scores'].min() + df1['scores'].max()), 'Median score', rotation=90)
+        ax[0].set_ylabel('Feature scores', color='b')
+        ax[0].set_xlabel('Rice index', color='k')
         ax[0].tick_params('y')
         ax[0].grid()
-        df1.plot(kind='scatter', x='index', y=phe, color='r', label='phenotype', ax=ax[1])
+        plt.setp(ax[0].spines.values(), linewidth=2)
+        df1.plot(kind='scatter', x='index', y=phe, color='r', label='Panicle number', ax=ax[1])
         df1.plot.line(x='index', y='trend', ax=ax[1])
         ax[1].axvline(x=(top_n * 2 + 1)/2, color='g', linestyle=':')
-        ax[1].text((top_n * 2 + 1)/2, 0.5*(df1[phe].min() + df1[phe].max()), 'median score', rotation=90)
+        ax[1].text((top_n * 2 + 1)/2, 0.5*(df1[phe].min() + df1[phe].max()), 'Median score', rotation=90)
         ax[1].set_ylabel(phe, color='r')
+        ax[1].set_xlabel('Rice index', color='k')
         ax[1].tick_params('y')
         ax[1].grid()
+        plt.setp(ax[1].spines.values(), linewidth=2)
+        plt.tight_layout()
+        plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(title_n, f_number, fn)))
+        plt.close()
+        if fn == 'non':
+            df1.to_csv(os.path.join(pre_path2, '{}_{}_{}z.csv'.format(title_n, f_number, fn)))
+        ss1 = df1[phe][:top_n]
+        ss2 = df1[phe][-top_n:]
+        tt, pp = scipy_ttest_ind(ss1, ss2, False)
+        pv_list.append('{},{},{},{},{}'.format(fn, ss1.mean(), ss2.mean(), pp, tt))
+    with open(os.path.join(pre_path2, '{}_{}.csv'.format(title_n, f_number)), 'w') as out_f:
+        out_f.write('type,subset1,subset2,p_value,t_statistic\n')
+        out_f.write('\n'.join(pv_list) + '\n')
+
+
+def feature_score2(dfx, ssy_n, df_p, m2c, path_o, title_n, f_number, phe, top_n):
+    o_path = os.path.join(path_o, 'feature_score_withT')
+    prepare_output_dir(o_path)
+    pre_path = 'pos' if title_n.endswith('pos') else 'neg' if title_n.endswith('neg') else 'all'
+    pre_path2 = os.path.join(o_path, pre_path)
+    prepare_output_dir(pre_path2)
+
+    df_p[['ind_t_test']] = df_p[['ind_t_test']].astype(float)
+    # print(df_p.ind_t_test)
+    df_p = df_p[df_p.ind_t_test <= 0.05]
+    dfs = dfx[df_p.index]
+    mc_list = [float(m2c.get(x)) for x in dfs.columns]
+    ssc = pd.Series(mc_list, index=dfs.columns)
+    fn_list = ['def', 'rev', 'non']
+    pv_list = []
+    for fn in fn_list:
+        ssca = ssc if fn == 'def' else ssc*(-1) if fn == 'rev' else 1
+
+        dfc = dfs * ssca
+        df1 = pd.DataFrame()
+        df1['scores'] = dfc.sum(1)
+        df1[phe] = ssy_n
+        df1 = df1.sort_values('scores')
+        df1['index'] = range(1, 1 + len(ssy_n))
+
+        z = np.polyfit(x=df1.loc[:, 'index'], y=df1.loc[:, phe], deg=1)
+        p = np.poly1d(z)
+        df1['trend'] = p(df1.loc[:, 'index'])
+
+        plt.rcParams["figure.figsize"] = [12, 16]
+        fig, ax = plt.subplots(2, 1)
+        df1.plot(kind='scatter', x='index', y='scores', color='b', label='Feature scores', ax=ax[0])
+        ax[0].axvline(x=(top_n * 2 + 1)/2, color='g', linestyle=':')
+        ax[0].text((top_n * 2 + 1)/2, 0.5 * (df1['scores'].min() + df1['scores'].max()), 'Median score', rotation=90)
+        ax[0].set_ylabel('Feature scores', color='b')
+        ax[0].set_xlabel('Rice index', color='k')
+        ax[0].tick_params('y')
+        ax[0].grid()
+        plt.setp(ax[0].spines.values(), linewidth=2)
+        df1.plot(kind='scatter', x='index', y=phe, color='r', label='Panicle number', ax=ax[1])
+        df1.plot.line(x='index', y='trend', ax=ax[1])
+        ax[1].axvline(x=(top_n * 2 + 1)/2, color='g', linestyle=':')
+        ax[1].text((top_n * 2 + 1)/2, 0.5*(df1[phe].min() + df1[phe].max()), 'Median score', rotation=90)
+        ax[1].set_ylabel(phe, color='r')
+        ax[1].set_xlabel('Rice index', color='k')
+        ax[1].tick_params('y')
+        ax[1].grid()
+        plt.setp(ax[1].spines.values(), linewidth=2)
         plt.tight_layout()
         plt.savefig(os.path.join(pre_path2, '{}_{}_{}'.format(title_n, f_number, fn)))
         plt.close()
@@ -652,16 +762,18 @@ def out_feature_plot(dfx, ssy, ssy_n, f_string, m2c, m2p, path_o, title_n, f_num
             ax[i].hist(high_df[m], bins=bins, color='r', alpha=.5)
             ax[i].hist(low_df[m], bins=bins, color='b', alpha=.5)
             ax[i].set_title(m)
+            plt.setp(ax[i].spines.values(), linewidth=2)
             ax[i].set_yticks(())
             i += 1
         ax[1].set_xlabel('Feature magnitude')
         ax[1].set_ylabel('Frequency')
         ax[1].legend(['High', 'Low'], loc='best')
         fig.tight_layout()
-        plt.suptitle(title_n)
+        # plt.suptitle(title_n)
         plt.savefig(os.path.join(pre_path2, '{}_{}_mir'.format(title_n, f_number)))
         plt.close()
         out_c.write(',,lr_score,{}\n'.format(lr_score))
+        return df_p
 
 
 def linear_rg(dfx, ssy, f_string):
@@ -682,8 +794,8 @@ def t_test(dfx, ssy, f_string):
     x0 = x.loc[y[y == 0].index, :]
     x1 = x.loc[y[y == 1].index, :]
     df1 = pd.DataFrame()
-    df1['Low_mean'] = x0.mean()
-    df1['High_mean'] = x1.mean()
+    df1['Low_panicle_mean'] = x0.mean()
+    df1['High_panicle_mean'] = x1.mean()
     df1['FC(High/Low)'] = x1.mean() / x0.mean()
     p_list = []
     for m in df1.index:
@@ -692,6 +804,11 @@ def t_test(dfx, ssy, f_string):
     df1['ind_t_test'] = np.array(p_list)
     df1['Low_std'] = x0.std()
     df1['High_std'] = x1.std()
+    df1.round({'Low_panicle_mean': 2, 'High_panicle_mean': 2, 'Low_std': 2, 'High_std': 2})
+    df1['Low_panicle_mean'] = df1['Low_panicle_mean'].map(str) + ' (' + df1['Low_std'].map(str) + ')'
+    df1['High_panicle_mean'] = df1['High_panicle_mean'].map(str) + ' (' + df1['High_std'].map(str) + ')'
+    df1 = df1.drop(['Low_std'], 1).rename(columns={'Low_panicle_mean': 'Low_panicle_mean (std)'})
+    df1 = df1.drop(['High_std'], 1).rename(columns={'High_panicle_mean': 'High_panicle_mean (std)'})
     return df1
 
 
@@ -705,14 +822,17 @@ def plot_f50_nap(n_l, a_l, p_l, path_o, tp):
     colors = ['blue', 'red', 'green']
     col_l = ['negative', 'all', 'positive']
     plt.rcParams["figure.figsize"] = [8, 6]
+    f, ax = plt.subplots()
     for ct, ls, clr in zip(col_l, lines, colors):
-        plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{} ROC AUC'.format(ct))
+        plt.plot(df1['mir_number'], df1[ct], color=clr, linestyle=ls, label='{} ROC AUC'.format(ct.capitalize()))
     plt.legend(loc='lower right')
-    plt.title('Linear SVM of all, positive, and negative correlation miRNAs')
-    plt.grid()
+    # plt.title('Linear SVM of all, positive, and negative correlation miRNAs')
+    # plt.grid()
     plt.xticks(np.arange(0, max(df1['mir_number']) + 1, 5))
     plt.yticks(np.arange(0.0, 1.05, 0.1))
     plt.xlabel('Feature numbers')
+    plt.ylabel('ROC AUC')
+    plt.setp(ax.spines.values(), linewidth=2)
     plt.tight_layout()
     plt.savefig(os.path.join(path_o, 'miRNA_comparison_{}'.format(tp)))
     plt.close()
@@ -724,7 +844,8 @@ def main():
     check2 = True
     check3 = True
     main_dir = './'
-    dfr, n_p = df_open(os.path.join(main_dir, 'wm_all_q.csv'))
+    file_n = sys.argv[1]
+    dfr, n_p = df_open(file_n)
     dfr = dfr.drop(['type (H)', 'waxy (H)'], axis=1)
     dfr2 = dfr.dropna()
     dfm = dfr.iloc[:, :924]
@@ -740,45 +861,47 @@ def main():
         c_list = ['Panicle Number (I)'] if test1 else dfp2.columns
         for phenotype_r in c_list:
             print('Phenotype: {}'.format(phenotype_r))
-            #  pn(dfm, dfp, main_dir, phenotype_r, 'wmq', 'no_drop', ct, tn, th, fn)
-            pn(dfm2, dfp2, main_dir, phenotype_r, 'wmq', 'drop', ct, tn, th, fn)
+            #  pn(dfm, dfp, main_dir, phenotype_r, 'nm_sf_q', 'no_drop', ct, tn, th, fn)
+            pn(dfm2, dfp2, main_dir, phenotype_r, 'nm_sf_q', 'drop', ct, tn, th, fn)
     if check2:
         print('Step 2')
         # d_list = ['drop', 'no_drop']
         d_list = ['drop']
         c_list = ['Panicle Number (I)'] if test1 else dfp2.columns
         for n in d_list:
-            r_dir = os.path.join(main_dir, '{}_{}_c{}t{}th{}'.format('wmq', n, ct, tn, th))
-            c_path = os.path.join(r_dir, 'wmq_corT{}.csv'.format(ct))
+            r_dir = os.path.join(main_dir, '{}_{}_c{}t{}th{}'.format('nm_sf_q', n, ct, tn, th))
+            c_path = os.path.join(r_dir, 'nm_sf_q_corT{}.csv'.format(ct))
             p2gp, p2gm, m2c = cor_dict_get(c_path, th)
-            m2p = p_dict_get(os.path.join(r_dir, 'wmq_pvlT{}.csv'.format(ct)), 0.8)
+            m2p = p_dict_get(os.path.join(r_dir, 'nm_sf_q_pvlT{}.csv'.format(ct)), 0.8)
             for phenotype in c_list:
                 print('Phenotype: {}'.format(phenotype))
                 phe_m = phenotype.replace('(', '').replace(')', '').replace(' ', '_')
                 p_dir = os.path.join(r_dir, phe_m)
                 prepare_output_dir(p_dir)
-                c_px = '{}_{}_c{}t{}'.format('wmq', n, ct, tn)
+                c_px = '{}_{}_c{}t{}'.format('nm_sf_q', n, ct, tn)
                 ssp = dfp2[phenotype] if n == 'drop' else dfp[phenotype]
                 ssp = ssp.dropna()
                 ss1 = s_top_gt(ssp, tn, True)
                 ssp = ssp[ss1.index]
                 dfx = dfm2.loc[ss1.index, :] if n == 'drop' else dfm.loc[ss1.index, :]
-                for c in ['neg', 'all']:
+                for c in ['neg']:
                     with open(os.path.join(p_dir, '{}_{}_{}_mir.csv'.format(c_px, phe_m, c))) as in_f:
                         for line in in_f:
                             lf = line.rstrip().split(',', maxsplit=2)
-                            if 10 <= int(lf[1]) <= 25:
-                                out_feature_plot(dfx, ss1, ssp, lf[2], m2c.get(phenotype), m2p.get(phenotype), p_dir,
-                                                 '{}_{}_{}'.format(c_px, phe_m, c), int(lf[1]))
+                            if 10 <= int(lf[1]) <= 35:
+                                df_pvl = out_feature_plot(dfx, ss1, ssp, lf[2], m2c.get(phenotype), m2p.get(phenotype),
+                                                          p_dir, '{}_{}_{}'.format(c_px, phe_m, c), int(lf[1]))
                                 feature_score3(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'.
                                                format(c_px, phe_m, c), int(lf[1]), phe_m, tn)
                                 feature_score4(dfx, ssp, lf[2], m2c.get(phenotype), p_dir, '{}_{}_{}'.
+                                               format(c_px, phe_m, c), int(lf[1]), phe_m, tn)
+                                feature_score2(dfx, ssp, df_pvl, m2c.get(phenotype), p_dir, '{}_{}_{}'.
                                                format(c_px, phe_m, c), int(lf[1]), phe_m, tn)
     if check3:
         print('Step 3')
         o_dir = './n_test'
         prepare_output_dir(o_dir)
-        c_path = os.path.join(o_dir, 'wmq_corT50.csv')
+        c_path = os.path.join(o_dir, 'nm_sf_q_corT50.csv')
         if not os.path.exists(c_path):
             df_c, df_p = rice_corr(dfm2, dfp2, 50, 'pearson')
             extract_rc(c_path, df_c, locate(df_c, 'c', 0.01), 'correlation')
