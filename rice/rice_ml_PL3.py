@@ -250,7 +250,7 @@ def acc_plot(df_in, path_o, title_n):
 def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
     plt.rcParams["figure.figsize"] = [22, 12]
     # fig, ax = plt.subplots(3, 3)
-    fig, ax = plt.subplots(2, 3)
+    fig, ax = plt.subplots(3, 2)
     i, j = 0, 0
     list_45l, list_50l = [], []
     for tn in range(30, 56, 5):
@@ -311,15 +311,15 @@ def top_n_test(df_xi, ss_y, title_n, out_path, ts, f_number, eps, df_cv):
         colors = ['blue', 'green']
         col_l = ['svl_train_roc', 'svl_test_roc']
         for ct, ls, clr in zip(col_l, lines, colors):
-            ax[j, i].plot(df_s['mir_number'], df_s[ct], color=clr, linestyle=ls, label='Linear SVM {}'.
+            ax[i, j].plot(df_s['mir_number'], df_s[ct], color=clr, linestyle=ls, label='Linear SVM {}'.
                           format(ct.split('_', 1)[1]))
-        ax[j, i].legend(loc='lower right')
-        ax[j, i].set_title('Top[{}] of rice'.format(tn))
+        ax[i, j].legend(loc='lower right')
+        ax[i, j].set_title('Top[{}] of rice'.format(tn))
         # ax[j, i].grid()
-        plt.setp(ax[j, i].spines.values(), linewidth=2)
-        ax[j, i].set_xlabel('Feature numbers')
-        ax[j, i].set_ylabel('ROC AUC')
-        ax[j, i].set_yticks(np.arange(0.0, 1.05, 0.1))
+        plt.setp(ax[i, j].spines.values(), linewidth=2)
+        ax[i, j].set_xlabel('Feature numbers')
+        ax[i, j].set_ylabel('ROC AUC')
+        ax[i, j].set_yticks(np.arange(0.0, 1.05, 0.1))
         '''
         if tn in [45, 50, 55]:
             col_s = ['svl_cv10_roc', 'svl_train_roc', 'svl_test_roc']
@@ -578,23 +578,23 @@ def feature_score4(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
 
         plt.rcParams["figure.figsize"] = [12, 16]
         fig, ax = plt.subplots(2, 1)
-        df1.plot(kind='scatter', x='index', y='scores', color='b', label='Feature scores', ax=ax[0])
-        ax[0].axvline(x=(top_n * 2) / 3 + 0.5, color='g', linestyle=':')
-        ax[0].axvline(x=(top_n * 4) / 3 + 0.5, color='g', linestyle=':')
-        ax[0].text((top_n * 2) / 3 + 0.5, 0.5 * (df1['scores'].min() + df1['scores'].max()), '1/3 score', rotation=90)
-        ax[0].text((top_n * 4) / 3 + 0.5, 0.5 * (df1['scores'].min() + df1['scores'].max()), '2/3 score', rotation=90)
-        ax[0].set_ylabel('Feature scores', color='b')
+        df1.plot(kind='scatter', x='index', y='scores', color='b', label='Panicle scores', legend=None, ax=ax[0])
+        ax[0].axvline(x=(top_n * 2) / 3 + 0.5, color='brown', linewidth=2, linestyle=':')
+        ax[0].axvline(x=(top_n * 4) / 3 + 0.5, color='brown', linewidth=2, linestyle=':')
+        ax[0].text((top_n * 2) / 3 + 0.5, 0.7 * (df1['scores'].min() + df1['scores'].max()), '1/3 score', rotation=90)
+        ax[0].text((top_n * 4) / 3 + 0.5, 0.7 * (df1['scores'].min() + df1['scores'].max()), '2/3 score', rotation=90)
+        ax[0].set_ylabel('Panicle scores', color='k')
         ax[0].set_xlabel('Rice index', color='k')
         ax[0].tick_params('y')
         ax[0].grid()
         plt.setp(ax[0].spines.values(), linewidth=2)
-        df1.plot(kind='scatter', x='index', y=phe, color='r', label='Panicle number', ax=ax[1])
+        df1.plot(kind='scatter', x='index', y=phe, color='r', label='Panicle number', legend=None, ax=ax[1])
         df1.plot.line(x='index', y='trend', ax=ax[1])
-        ax[1].axvline(x=(top_n * 2) / 3 + 0.5, color='g', linestyle=':')
-        ax[1].axvline(x=(top_n * 4) / 3 + 0.5, color='g', linestyle=':')
-        ax[1].text((top_n * 2) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), 'Demarcation 1', rotation=90)
-        ax[1].text((top_n * 4) / 3 + 0.5, 0.5 * (df1[phe].min() + df1[phe].max()), 'Demarcation 2', rotation=90)
-        ax[1].set_ylabel(phe, color='r')
+        ax[1].axvline(x=(top_n * 2) / 3 + 0.5, color='brown', linewidth=2, linestyle=':')
+        ax[1].axvline(x=(top_n * 4) / 3 + 0.5, color='brown', linewidth=2, linestyle=':')
+        ax[1].text((top_n * 2) / 3 + 0.5, 0.7 * (df1[phe].min() + df1[phe].max()), 'Demarcation 1', rotation=90)
+        ax[1].text((top_n * 4) / 3 + 0.5, 0.7 * (df1[phe].min() + df1[phe].max()), 'Demarcation 2', rotation=90)
+        ax[1].set_ylabel(phe, color='k')
         ax[1].set_xlabel('Rice index', color='k')
         ax[1].tick_params('y')
         ax[1].grid()
@@ -646,19 +646,19 @@ def feature_score3(dfx, ssy_n, f_string, m2c, path_o, title_n, f_number, phe, to
 
         plt.rcParams["figure.figsize"] = [12, 16]
         fig, ax = plt.subplots(2, 1)
-        df1.plot(kind='scatter', x='index', y='scores', color='b', label='Feature score', ax=ax[0])
-        ax[0].axvline(x=(top_n * 2 + 1)/2, color='g', linestyle=':')
-        ax[0].text((top_n * 2 + 1)/2, 0.5 * (df1['scores'].min() + df1['scores'].max()), 'Median score', rotation=90)
-        ax[0].set_ylabel('Feature scores', color='b')
+        df1.plot(kind='scatter', x='index', y='scores', color='b', label='Panicle score', legend=None, ax=ax[0])
+        ax[0].axvline(x=(top_n * 2 + 1)/2, color='brown', linewidth=2, linestyle=':')
+        ax[0].text((top_n * 2 + 1)/2, 0.7 * (df1['scores'].min() + df1['scores'].max()), 'Median score', rotation=90)
+        ax[0].set_ylabel('Panicle scores', color='k')
         ax[0].set_xlabel('Rice index', color='k')
         ax[0].tick_params('y')
         ax[0].grid()
         plt.setp(ax[0].spines.values(), linewidth=2)
-        df1.plot(kind='scatter', x='index', y=phe, color='r', label='Panicle number', ax=ax[1])
+        df1.plot(kind='scatter', x='index', y=phe, color='r', label='Panicle number', legend=None, ax=ax[1])
         df1.plot.line(x='index', y='trend', ax=ax[1])
-        ax[1].axvline(x=(top_n * 2 + 1)/2, color='g', linestyle=':')
-        ax[1].text((top_n * 2 + 1)/2, 0.5*(df1[phe].min() + df1[phe].max()), 'Median score', rotation=90)
-        ax[1].set_ylabel(phe, color='r')
+        ax[1].axvline(x=(top_n * 2 + 1)/2, color='brown', linewidth=2, linestyle=':')
+        ax[1].text((top_n * 2 + 1)/2, 0.7*(df1[phe].min() + df1[phe].max()), 'Median score', rotation=90)
+        ax[1].set_ylabel(phe, color='k')
         ax[1].set_xlabel('Rice index', color='k')
         ax[1].tick_params('y')
         ax[1].grid()
@@ -708,19 +708,19 @@ def feature_score2(dfx, ssy_n, df_p, m2c, path_o, title_n, f_number, phe, top_n)
 
         plt.rcParams["figure.figsize"] = [12, 16]
         fig, ax = plt.subplots(2, 1)
-        df1.plot(kind='scatter', x='index', y='scores', color='b', label='Feature scores', ax=ax[0])
-        ax[0].axvline(x=(top_n * 2 + 1)/2, color='g', linestyle=':')
-        ax[0].text((top_n * 2 + 1)/2, 0.5 * (df1['scores'].min() + df1['scores'].max()), 'Median score', rotation=90)
-        ax[0].set_ylabel('Feature scores', color='b')
+        df1.plot(kind='scatter', x='index', y='scores', color='b', label='Panicle scores', legend=None, ax=ax[0])
+        ax[0].axvline(x=(top_n * 2 + 1)/2, color='brown', linewidth=2, linestyle=':')
+        ax[0].text((top_n * 2 + 1)/2, 0.7 * (df1['scores'].min() + df1['scores'].max()), 'Median score', rotation=90)
+        ax[0].set_ylabel('Panicle scores', color='k')
         ax[0].set_xlabel('Rice index', color='k')
         ax[0].tick_params('y')
         ax[0].grid()
         plt.setp(ax[0].spines.values(), linewidth=2)
         df1.plot(kind='scatter', x='index', y=phe, color='r', label='Panicle number', ax=ax[1])
-        df1.plot.line(x='index', y='trend', ax=ax[1])
-        ax[1].axvline(x=(top_n * 2 + 1)/2, color='g', linestyle=':')
-        ax[1].text((top_n * 2 + 1)/2, 0.5*(df1[phe].min() + df1[phe].max()), 'Median score', rotation=90)
-        ax[1].set_ylabel(phe, color='r')
+        df1.plot.line(x='index', y='trend', legend=None, ax=ax[1])
+        ax[1].axvline(x=(top_n * 2 + 1)/2, color='brown', linewidth=2, linestyle=':')
+        ax[1].text((top_n * 2 + 1)/2, 0.7*(df1[phe].min() + df1[phe].max()), 'Median score', rotation=90)
+        ax[1].set_ylabel(phe, color='k')
         ax[1].set_xlabel('Rice index', color='k')
         ax[1].tick_params('y')
         ax[1].grid()
@@ -804,7 +804,7 @@ def t_test(dfx, ssy, f_string):
     df1['ind_t_test'] = np.array(p_list)
     df1['Low_std'] = x0.std()
     df1['High_std'] = x1.std()
-    df1.round({'Low_panicle_mean': 2, 'High_panicle_mean': 2, 'Low_std': 2, 'High_std': 2})
+    df1 = df1.round({'Low_panicle_mean': 2, 'High_panicle_mean': 2, 'Low_std': 2, 'High_std': 2})
     df1['Low_panicle_mean'] = df1['Low_panicle_mean'].map(str) + ' (' + df1['Low_std'].map(str) + ')'
     df1['High_panicle_mean'] = df1['High_panicle_mean'].map(str) + ' (' + df1['High_std'].map(str) + ')'
     df1 = df1.drop(['Low_std'], 1).rename(columns={'Low_panicle_mean': 'Low_panicle_mean (std)'})
@@ -839,7 +839,7 @@ def plot_f50_nap(n_l, a_l, p_l, path_o, tp):
 
 
 def main():
-    check1 = True
+    check1 = False
     test1 = True
     check2 = True
     check3 = True
