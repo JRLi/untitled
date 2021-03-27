@@ -116,5 +116,6 @@ def main(argv=None):
         print(sys.stderr, "Terminated, for help use -h or --help")
         return 2
 
+
 if __name__ == '__main__':
     sys.exit(main())

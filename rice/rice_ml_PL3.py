@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python
 import pandas as pd
 import numpy as np
 import scipy.stats as st

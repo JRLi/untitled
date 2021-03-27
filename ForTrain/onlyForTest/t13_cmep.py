@@ -7,7 +7,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import RFE
 from sklearn.svm import SVC
-from scipy import interp
+from scipy import interpolate
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import roc_curve, auc
@@ -72,7 +72,7 @@ def ml_clf(df_in, ssy_in, fn, cv):
                 md = clf.fit(x[train], y[train])
                 pb = md.predict_proba(x[test])
                 fpr_cv, tpr_cv, thresholds_cv = roc_curve(y[test], pb[:, 1])
-                tprs.append(interp(mean_fpr, fpr_cv, tpr_cv))
+                tprs.append(interpolate(mean_fpr, fpr_cv, tpr_cv))
                 tprs[-1][0] = 0.0
                 roc_auc_cv = auc(fpr_cv, tpr_cv)
                 aucs.append(roc_auc_cv)

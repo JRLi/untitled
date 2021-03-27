@@ -17,6 +17,7 @@ def open_df(in_path, direct='n'):
     return df, fbase
 
 
+'''
 df, dfb = open_df('E:/StringTemp/Project_Rice/wm_df129_q_i.csv')
 df_t = df.iloc[:, 924:]
 df_f = df.iloc[:, :20]
@@ -28,4 +29,29 @@ anova_svm = Pipeline([('anova', anova_filter), ('svc', clf)])
 anova_svm.set_params(anova__k='all', svc__C=.1).fit(x_train, y_train)
 prediction = anova_svm.predict(x_train)
 print(anova_svm.score(x_train, y_train))
+'''
+df = pd.read_csv('C:/Users/fanic/Downloads/tmp/test.csv', index_col=0)
+df2 = pd.read_csv('C:/Users/fanic/Downloads/tmp/test2.csv', index_col=0)
+df3 = pd.read_csv('C:/Users/fanic/Downloads/tmp/test3.csv', index_col=0)
+print(df)
+print(df2)
+idx = df.index.intersection(df2.index)
+idx2 = df2.index.intersection(df.index)
+print(idx)
+print(idx2)
+df4 = df2.loc[idx]
+print(df4)
+idx = df3.index.intersection(df2.index)
+df5 = df2.loc[idx]
+print(df5)
+df5.index = df5.y
+print(df5)
+print((df4.x <= df.A) & (df.A < df4.y))
+#df3 = pd.DataFrame()
+#df3['s1'] = (df.D <= df.A) & (df.A < df.E)
+#df3['s2'] = (df.D <= df.B) & (df.B < df.E)
+#df3['s3'] = (df.D <= df['A.1']) & (df['A.1'] < df.E)
+
+#print(df2.sum())
+
 

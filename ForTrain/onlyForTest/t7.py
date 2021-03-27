@@ -1,9 +1,7 @@
+import os
+import numpy as np
 import pandas as pd
 from pandas import DataFrame
-from pandas import Series
-from scipy import stats
-import numpy as np
-import os
 from sklearn import svm
 
 fc = 20.0
